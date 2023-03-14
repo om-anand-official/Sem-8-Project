@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin</title>
+  </head>
+  <body>
+    <a href="/">
+      <button>Home</button>
+    </a>
+    <h1>Admin Panel</h1>
+    <form action="/admin_login" method="post">
+      Mail :
+      <input type="email" name="mail" placeholder="abcd@xyz.xyz" required />
+      <br />
+      <br />
+
+      Password :
+      <input type="password" name="password" required />
+      <br />
+      <br />
+
+      {% if errors["valid_Mail"] or errors["valid_Pass"] %}
+      <p style="color: red">Incorrect Credentials</p>
+      {% endif %}
+
+      <br />
+      <br />
+
+      {{ captcha() }}
+      <input type="text" name="captcha" required />
+      <br />
+      <br />
+
+      {% if errors["valid_Captcha"] %}
+      <p style="color: red">Incorrect CAPTCHA</p>
+      {% endif %}
+
+      <br />
+      <br />
+      <input type="submit" name="admin" value="Login" />
+    </form>
+  </body>
+</html>

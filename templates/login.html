@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+  </head>
+  <body>
+    <a href="/">
+      <button>Home</button>
+    </a>
+    <h1>Login</h1>
+    <form action="/form" method="post">
+      Mail :
+      <input type="email" name="mail" placeholder="abcd@xyz.xyz" required />
+      <br />
+      <br />
+
+      Password :
+      <input
+        type="password"
+        name="password"
+        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+        required
+      />
+
+      {% if not (check["valid_Mail"] and check["valid_Pass"]) %}
+      <br />
+      <br />
+      <p style="color: red">Incorrect Credentials</p>
+      {% endif %} {% if check["mail_Duplicate"] %}
+      <br />
+      <br />
+      <p style="color: red">User already exists</p>
+      {% endif %}
+
+      <br />
+      <br />
+
+      {{ captcha() }}
+      <input type="text" name="captcha" required />
+
+      {% if not check["valid_Captcha"] %}
+      <br />
+      <br />
+      <p style="color: red">Incorrect CAPTCHA</p>
+      {% endif %}
+
+      <br />
+      <br />
+
+      <input type="submit" name="page" value="Login" />
+
+      {% if msg %}
+      <br />
+      <br />
+      <p style="color: red">{{ msg }}</p>
+      {% endif %}
+    </form>
+  </body>
+</html>

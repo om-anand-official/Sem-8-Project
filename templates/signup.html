@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Signup</title>
+  </head>
+  <body>
+    <a href="/">
+      <button>Home</button>
+    </a>
+    <h1>Signup</h1>
+    <form action="/form" method="post">
+      Mail :
+      <input type="email" name="mail" required />
+
+      {% if not check["valid_Mail"] %}
+      <br />
+      <br />
+      <p style="color: red">Incorrect Mail</p>
+      {% endif %} {% if not check["mail_Duplicate"] %}
+      <br />
+      <br />
+      <p style="color: red">User Already Exists</p>
+      {% endif %}
+
+      <br />
+      <br />
+
+      Password :
+      <input
+        type="password"
+        name="password"
+        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+        required
+      />
+      <br />
+      <br />
+
+      Confirm Password :
+      <input
+        type="password"
+        name="conf_pass"
+        pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+        required
+      />
+
+      {% if not check["valid_Pass"] %}
+      <br />
+      <br />
+      <p style="color: red">Invalid Password</p>
+      {% endif %} {% if not check["match_Pass"] %}
+      <br />
+      <br />
+      <p style="color: red">Passwords Do not match</p>
+      {% endif %}
+
+      <br />
+      <br />
+
+      {{ captcha() }}
+      <input type="text" name="captcha" required />
+
+      {% if not check["valid_Captcha"] %}
+      <br />
+      <br />
+      <p style="color: red">Incorrect CAPTCHA</p>
+      {% endif %}
+
+      <br />
+      <br />
+
+      <input type="submit" name="page" value="Signup" />
+
+      {% if msg %}
+      <br />
+      <br />
+      <p style="color: red">{{ msg }}</p>
+      {% endif %}
+    </form>
+  </body>
+</html>
