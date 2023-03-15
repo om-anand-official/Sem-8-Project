@@ -1,13 +1,31 @@
-import uuid
-import re
-import hashlib as h
+# Universally Unique Identifier lib for the creation of session and CAPTCHA
+import uuid 
+
+# regex lib for regular expression check of input fields
+import re 
+
+# provides necessary hash for the security of input data
+import hashlib
+
+# Framework used : FLASK
 from flask import Flask, redirect, request, render_template, session
+
+# create unique Sessions
 from flask_sessionstore import Session
+
+# create unique CAPTCHA for each session
 from flask_session_captcha import FlaskSessionCaptcha
+
+# connect MongoDB with Python
 from pymongo import MongoClient
+
+# added security for input files
 from werkzeug.utils import secure_filename
 
+# path to uploads folder where necessary files will be stored
 UPLOAD_FOLDER = 'uploads\\'
+
+# no other extensions allowed for uploaded file
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 app = Flask(__name__)
@@ -85,6 +103,8 @@ def form():
 			if not password or not re.fullmatch(pass_regex, password):
 				check['valid_Pass']= False
 
+			password = hashlib.sha256(str.encode(password)).hexdigest()
+
 			if not captcha.validate():
 				check['valid_Captcha']= False
 
@@ -128,6 +148,8 @@ def form():
 
 			if password!= conf_pass:
 				check['match_Pass']= False
+
+			password= hashlib.sha256(str.encode(password)).hexdigest()
 
 			if not captcha.validate():
 				check['valid_Captcha']= False
