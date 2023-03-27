@@ -1,11 +1,12 @@
 # Universally Unique Identifier lib for the creation of session and CAPTCHA
+import os
 import uuid 
 
 # regex lib for regular expression check of input fields
 import re 
 
 # provides necessary hash for the security of input data
-import hashlib
+import bcrypt
 
 # Framework used : FLASK
 from flask import Flask, redirect, request, render_template, session
@@ -28,18 +29,27 @@ UPLOAD_FOLDER = 'uploads\\'
 # no other extensions allowed for uploaded file
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
+# Flask Application Initialized
 app = Flask(__name__)
+
+# The Uploads Folder where the valid Images will be stored
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# MongoDB Client for connection
 mongoClient = MongoClient('localhost', 27017)
 
+# Key required for CAPTCHA
 app.config["SECRET_KEY"] = uuid.uuid4()
 app.config['CAPTCHA_ENABLE'] = True
 
+# Count of Numbers in the CAPTCHA
 app.config['CAPTCHA_LENGTH'] = 6
 
+# CAPTCHA Image Dimensions
 app.config['CAPTCHA_WIDTH'] = 160
 app.config['CAPTCHA_HEIGHT'] = 60
+
+# MongoDB Session Parameters used for generating CAPTCHA
 app.config['SESSION_MONGODB'] = mongoClient
 app.config['SESSION_TYPE'] = 'mongodb'
 app.config["SESSION_PERMANENT"] = False
@@ -103,22 +113,32 @@ def form():
 			if not password or not re.fullmatch(pass_regex, password):
 				check['valid_Pass']= False
 
-			password = hashlib.sha256(str.encode(password)).hexdigest()
-
 			if not captcha.validate():
 				check['valid_Captcha']= False
 
 			if all([i for i in check.values()]):
 
 				details= {
-					'mail': '%s'%(mail),
-					'pass': '%s'%(password)
+					'mail': '%s'%(mail)
 				}
 
-				if collection.count_documents(details):
-					return render_template("file_upload.html", msg= 'Logged in Successfully')
+				user_exist= collection.count_documents(details)
+				
+				if user_exist:
+					db_passwords= list(collection.find({"mail" : '%s'%(mail)}, {"pass": 1}))
+					db_password= db_passwords[0]['pass']
+
+					correct_pass= bcrypt.checkpw(password.encode(), db_password.encode())
+
+					print(user_exist)
+					print(password)
+					print(db_password)
+					print(correct_pass)
+
+					if user_exist and correct_pass:
+						return render_template("file_upload.html", msg= 'Logged in Successfully')
 				else:
-					return render_template("login.html", check= check, msg= 'User does not exist')
+					return render_template("login.html", check= check, msg= 'User does not exist.')
 
 			else:
 				return render_template("login.html", check= check, msg= 'Try Again')
@@ -149,7 +169,10 @@ def form():
 			if password!= conf_pass:
 				check['match_Pass']= False
 
-			password= hashlib.sha256(str.encode(password)).hexdigest()
+			salt = bcrypt.gensalt()
+			password= bcrypt.hashpw(password.encode(), salt)
+
+			# password = hashlib.sha256(str.encode(password)).hexdigest()
 
 			if not captcha.validate():
 				check['valid_Captcha']= False
@@ -158,7 +181,7 @@ def form():
 
 				details= {
 					'mail': '%s'%(mail),
-					'pass': '%s'%(password),
+					'pass': '%s'%(password.decode()),
 					'attempts': '%d'%(3)
 				}
 
@@ -169,6 +192,9 @@ def form():
 
 			else:
 				return render_template("signup.html", check= check, msg= 'Try Again')
+		
+	else:
+		return redirect('/login')
 
 @app.route('/admin')
 def admin():
@@ -178,6 +204,24 @@ def admin():
 def admin_panel():
 	return "Admin Page"
 
+@app.route('/file_upload', methods=['POST', 'GET'])
+def file_upload():
+	if request.method == 'POST':
+		file = request.files['road_img']
+
+		if allowed_file(file.filename):
+			ftype= True
+			file_name= secure_filename(file.filename)
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
+
+		address= request.form.get('address').strip()
+		area= request.form.get('area').strip()
+		state= request.form.get('state').strip().replace(' ', '')
+		district= request.form.get('district').strip().replace(' ', '')
+		zipcode= request.form.get('zipcode').strip().replace(' ', '')
+
+		return render_template("pothole_result.html", file_name= file_name, ftype=ftype, address=address, area=area, state=state, district=district, zipcode=zipcode)
+	return 'File Uploaded Successfully'
 
 if __name__ == "__main__":
 	app.run(debug=True)

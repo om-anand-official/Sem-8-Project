@@ -17,36 +17,63 @@
     <p style="color: limegreen">{{ msg }}</p>
     {% endif %}
 
-    <br />
-    <br />
-
     <!-- <script src="script.js"></script> -->
-    <form>
-      <label for="inputState">State</label>
-      <select class="form-control" id="State" onchange="getState()">
-        <option value="0">Select State</option>
+
+    <h1>
+      File Upload Form
+      <br />
+    </h1>
+    <h3>
+      Found a Pot Hole ?
+      <br />
+      Be a Responsible Citizen and Report it !
+    </h3>
+
+    <form action="/file_upload" method="post" enctype="multipart/form-data">
+      Address/Landmark :
+      <input type="text" name="address" required />
+      <br />
+      <br />
+      Area :
+      <input type="text" name="area" required />
+      <br />
+      <br />
+
+      <label for="state">State</label>
+      <select
+        class="form-control"
+        id="state"
+        name="state"
+        onchange="getState()"
+        required
+      >
+        <option value="">Select State</option>
         <option value="Gujarat">Gujarat</option>
         <option value="Maharashtra">Maharashtra</option>
 
         <option disabled style="background-color: #aaa; color: #fff">
           UNION Territories
         </option>
-        <!-- <option value="Andaman and Nicobar Islands">
-            Andaman and Nicobar Islands
-          </option>
-          <option value="Chandigarh">Chandigarh</option>
-          <option value="Dadar and Nagar Haveli">Dadar and Nagar Haveli</option>
-          <option value="Daman and Diu">Daman and Diu</option> -->
         <option value="Delhi">Delhi</option>
-        <!-- <option value="Lakshadeep">Lakshadeep</option>
-          <option value="Pondicherry">Pondicherry</option> -->
       </select>
-
-      <label for="District">District</label>
-      <select class="form-control" id="District">
-        <option value="0">-- Select --</option>
+      <br />
+      <br />
+      <label for="district">District</label>
+      <select class="form-control" id="district" name="district" required>
+        <option value="">-- Select --</option>
       </select>
+      <br />
+      <br />
+      ZipCode :
+      <input type="text" name="zipcode" pattern="[0-9]{6}" required />
+      <br />
+      <br />
+      <input type="file" name="road_img" required />
+      <br />
+      <br />
+      <input type="submit" value="Submit" />
     </form>
+
     <script>
       var Gujarat = [
         "Ahmedabad",
@@ -136,7 +163,7 @@
       ];
 
       function getState() {
-        let StateSelected = document.getElementById("State");
+        let StateSelected = document.getElementById("state");
 
         let optionsList = [];
         let htmlString = "";
@@ -152,9 +179,10 @@
             optionsList = Delhi;
             break;
           default:
-            htmlString = '<option value="0">-- Select --</option>';
+            htmlString = '<option value="">-- Select --</option>';
         }
 
+        console.log(optionsList);
         for (let i = 0; i < optionsList.length; i++) {
           htmlString +=
             '<option value="' +
@@ -164,7 +192,7 @@
             "</option>";
         }
 
-        document.getElementById("District").innerHTML = htmlString;
+        document.getElementById("district").innerHTML = htmlString;
       }
     </script>
   </body>
