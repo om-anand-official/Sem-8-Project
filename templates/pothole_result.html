@@ -19,18 +19,20 @@
     <br />
     <h1>Pothole Detection Result</h1>
     <br />
-    Address : {{ address }}
+    Address : {{ parameters['address'] }}
     <br />
-    Area : {{ area }}
+    Area : {{ parameters['area'] }}
     <br />
-    ZipCode : {{ zipcode }}
+    ZipCode : {{ parameters['zipcode'] }}
     <br />
-    District : {{ district }}
+    District : {{ parameters['district'] }}
     <br />
-    State : {{ state }}
+    State : {{ parameters['state'] }}
     <br />
-    File : {{ file_name }}
+    File : {{ parameters['file_name'] }}
     <br />
-    Percentage : {{ pothole_percent }}
+    Percentage : {{ results['pothole_percent'] }}
+    <br />
+    {{ results['detect_result'] }}
   </body>
 </html>

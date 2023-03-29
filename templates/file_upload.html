@@ -32,45 +32,97 @@
     <form action="/file_upload" method="post" enctype="multipart/form-data">
       Address/Landmark :
       <input type="text" name="address" required />
+
+      {% if not check["valid_address"] %}
+      <br />
+      <br />
+      <p style="color: red">Address cannot be empty</p>
+      {% endif %}
+
       <br />
       <br />
       Area :
       <input type="text" name="area" required />
+
+      {% if not check["valid_area"] %}
+      <br />
+      <br />
+      <p style="color: red">Area cannot be empty</p>
+      {% endif %}
+
       <br />
       <br />
 
       <label for="state">State</label>
-      <select
-        class="form-control"
-        id="state"
-        name="state"
-        onchange="getState()"
-        required
-      >
+      <select id="state" name="state" onchange="getState()" required>
         <option value="">Select State</option>
         <option value="Gujarat">Gujarat</option>
         <option value="Maharashtra">Maharashtra</option>
-
         <option disabled style="background-color: #aaa; color: #fff">
           UNION Territories
         </option>
         <option value="Delhi">Delhi</option>
       </select>
+
+      {% if not check["valid_state"] %}
       <br />
       <br />
+      <p style="color: red">Invalid State</p>
+      {% endif %}
+
+      <br />
+      <br />
+
       <label for="district">District</label>
-      <select class="form-control" id="district" name="district" required>
+      <select id="district" name="district" required>
         <option value="">-- Select --</option>
       </select>
+
+      {% if not check["valid_district"] %}
       <br />
       <br />
+      <p style="color: red">Invalid District</p>
+      {% endif %}
+
+      <br />
+      <br />
+
       ZipCode :
       <input type="text" name="zipcode" pattern="[0-9]{6}" required />
+
+      {% if not check["valid_zip"] %}
       <br />
       <br />
+      <p style="color: red">Invalid ZipCode</p>
+      {% endif %}
+
+      <br />
+      <br />
+
       <input type="file" name="road_img" required />
+      <p>File Formats Supported : JPG, PNG, JPEG</p>
+
+      {% if not check["valid_file"] %}
       <br />
       <br />
+      <p style="color: red">Invalid File Format</p>
+      {% endif %}
+
+      <br />
+      <br />
+
+      {{ captcha() }}
+      <input type="text" name="captcha" required />
+
+      {% if not check["valid_Captcha"] %}
+      <br />
+      <br />
+      <p style="color: red">Incorrect CAPTCHA</p>
+      {% endif %}
+
+      <br />
+      <br />
+
       <input type="submit" value="Submit" />
     </form>
 

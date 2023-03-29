@@ -23,6 +23,28 @@ from pymongo import MongoClient
 # added security for input files
 from werkzeug.utils import secure_filename
 
+# Keras for using the H5 model
+from keras.models import Sequential
+from keras.models import load_model
+from keras.utils import np_utils
+
+# Numpy to reshape and resize the pixel data of image
+import numpy as np
+
+# Computer Vision Library for object detection in image
+import cv2
+
+# Library for Pattern Matching
+import glob
+
+# PIL : Image porocessing library
+from  PIL import Image 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
 # path to uploads folder where necessary files will be stored
 UPLOAD_FOLDER = 'uploads\\'
 
@@ -54,12 +76,72 @@ app.config['SESSION_MONGODB'] = mongoClient
 app.config['SESSION_TYPE'] = 'mongodb'
 app.config["SESSION_PERMANENT"] = False
 
+# Flask Session for creating CAPTCHA
 Session(app)
 
+# CAPTCHA created using Flask Session
 captcha = FlaskSessionCaptcha(app)
 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+# Function to check the validity of filename
 def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[-1].lower() in ALLOWED_EXTENSIONS
+
+def model(image):
+	global result, pothole_percent, size
+
+	size = 300
+	model = Sequential()
+	model = load_model('full_model.h5')
+
+	test = [cv2.imread(img, 0) for img in image]
+	print(test)
+
+	for i in range(len(test)):
+		test[i] = cv2.resize(test[i], (size, size))
+
+	X_temp = np.asarray(test)
+
+	X_test = []
+	X_test.extend(X_temp)
+	X_test = np.asarray(X_test)
+	X_test = X_test.reshape(X_test.shape[0], size, size, 1)
+
+	Y_temp = np.zeros([X_temp.shape[0]], dtype = int)
+	# Y_temp = np.ones([X_temp.shape[0]], dtype = int)
+
+	Y_test = []
+	Y_test.extend(Y_temp)
+	Y_test = np.asarray(Y_test)
+	Y_test = np_utils.to_categorical(Y_test)
+
+	X_test =X_test/ 255
+
+	tests = model.predict(X_test)
+
+	for i in range(len(X_test)):
+		print(">>> Predicted %d = %s" % (i, tests[i]))
+
+	result = tests[i]
+	pothole_percent = float("{0:.2f}".format(result[1] * 100))
+
+	detect_result= 'Pothole Detected'
+
+	print(result)
+	if result[1] < 0.6: detect_result= 'No ' + detect_result
+
+	return pothole_percent, detect_result
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 @app.route('/')
 def index():
@@ -85,7 +167,15 @@ def signup(check= {
 	return render_template("signup.html", check=check, msg= msg)
 
 @app.route('/form', methods=['POST', 'GET'])
-def form():
+def form(file_check= {
+			'valid_address': True,
+			'valid_area': True,
+			'valid_state': True,
+			'valid_district': True,
+			'valid_zip': True,
+			'valid_file': True,
+			'valid_Captcha': True
+		}):
 
 	db= mongoClient['userdata']
 
@@ -136,7 +226,7 @@ def form():
 					print(correct_pass)
 
 					if user_exist and correct_pass:
-						return render_template("file_upload.html", msg= 'Logged in Successfully')
+						return render_template("file_upload.html", msg= 'Logged in Successfully', check= file_check)
 				else:
 					return render_template("login.html", check= check, msg= 'User does not exist.')
 
@@ -186,7 +276,7 @@ def form():
 				}
 
 				if collection.insert_one(details):
-					return render_template("file_upload.html", msg= 'User Created Successfully')
+					return render_template("file_upload.html", msg= 'User Created Successfully', check= file_check)
 				else:
 					return render_template("signup.html", check= check, msg= 'Failed to create user. Try Again')
 
@@ -207,12 +297,16 @@ def admin_panel():
 @app.route('/file_upload', methods=['POST', 'GET'])
 def file_upload():
 	if request.method == 'POST':
-		file = request.files['road_img']
 
-		if allowed_file(file.filename):
-			ftype= True
-			file_name= secure_filename(file.filename)
-			file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
+		check= {
+			'valid_address': True,
+			'valid_area': True,
+			'valid_state': True,
+			'valid_district': True,
+			'valid_zip': True,
+			'valid_file': True,
+			'valid_Captcha': True
+		}
 
 		address= request.form.get('address').strip()
 		area= request.form.get('area').strip()
@@ -220,8 +314,66 @@ def file_upload():
 		district= request.form.get('district').strip().replace(' ', '')
 		zipcode= request.form.get('zipcode').strip().replace(' ', '')
 
-		return render_template("pothole_result.html", file_name= file_name, ftype=ftype, address=address, area=area, state=state, district=district, zipcode=zipcode)
-	return 'File Uploaded Successfully'
+		file = request.files['road_img']
+		file_name= file.filename
+
+		pothole_percent, detect_result= 0, 0
+		
+		if allowed_file(file.filename):
+			file_name= secure_filename(file.filename)
+
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
+			
+			path= os.path.join(app.config['UPLOAD_FOLDER'], file_name)
+			pothole_percent, detect_result= model(glob.glob(path))
+		else:
+			check['valid_file']= False
+
+		if not address: 
+			check['valid_address']= False
+
+		if not area:
+			check['valid_area']= False
+		
+		STATES_LIST_INDIA = ['Gujarat', 'Maharashtra', 'Delhi']
+
+		if not state or state not in STATES_LIST_INDIA:
+			check['valid_state']= False
+
+		if not district:
+			check['valid_district']= False
+
+		if not zipcode or zipcode.startswith('0'):
+			check['valid_zip']= False
+
+		if not captcha.validate():
+			check['valid_Captcha']= False
+
+		parameters= {
+			'address': address,
+			'area': area,
+			'state': state,
+			'district': district,
+			'zipcode': zipcode,
+			'file_name': file_name
+		}
+
+		results= {
+			'pothole_percent': pothole_percent,
+			'detect_result': detect_result
+		}
+
+		if all([i for i in check.values()]):
+			return render_template("pothole_result.html", parameters=parameters, results= results)
+		else:
+			return render_template("file_upload.html", check= check, msg= '')
+	return redirect('/login')
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 if __name__ == "__main__":
-	app.run(debug=True)
+	app.run(debug=True, host='0.0.0.0')
