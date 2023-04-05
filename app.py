@@ -1,6 +1,8 @@
 # Universally Unique Identifier lib for the creation of session and CAPTCHA
-import os
 import uuid 
+
+# for managing the image paths
+import os
 
 # regex lib for regular expression check of input fields
 import re 
@@ -10,12 +12,20 @@ import bcrypt
 
 # Framework used : FLASK
 from flask import Flask, redirect, request, render_template, session
+# Flask 			: Flask class used to create web app
+# redirect 			: redirecting to specific url
+# request 			: get the input from HTML fields
+# render_template 	: load specified HTML page
+# session 			: maintain session and session variables
 
 # create unique Sessions
 from flask_sessionstore import Session
 
 # create unique CAPTCHA for each session
 from flask_session_captcha import FlaskSessionCaptcha
+
+# schedule the update of attempts everyday
+from flask_apscheduler import APScheduler
 
 # connect MongoDB with Python
 from pymongo import MongoClient
@@ -38,7 +48,10 @@ import cv2
 import glob
 
 # PIL : Image porocessing library
-from  PIL import Image 
+from  PIL import Image
+
+# 
+from datetime import datetime as dt
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -82,6 +95,13 @@ Session(app)
 # CAPTCHA created using Flask Session
 captcha = FlaskSessionCaptcha(app)
 
+# scheduler objects to schedule tasks
+
+# scheduler object for updating upload count everyday at midnight
+file_upload_attempt_update= APScheduler()
+
+# scheduler object for reporting authorities
+authority_report= APScheduler()
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -92,6 +112,8 @@ captcha = FlaskSessionCaptcha(app)
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[-1].lower() in ALLOWED_EXTENSIONS
 
+
+# Machine Learning Model for Pothole Detection
 def model(image):
 	global result, pothole_percent, size
 
@@ -138,34 +160,120 @@ def model(image):
 	return pothole_percent, detect_result
 
 
+# Function to update attempts everyday at
+def update_attempts():
+	db= mongoClient['userdata']
+	collection= db['data']
+
+	if collection.update_many({}, {'$set' : {'attempts' : 3}}):
+		n= collection.count_documents({'attempts' : 3})
+		t= collection.count_documents({})
+		print(f'==> {dt.now()} :: {n}/{t} Documents Updated')
+
+
+# Function to decrement attempt after uploading image
+def decrement_attempt(mail):
+	db= mongoClient['userdata']
+	collection= db['data']
+
+	details= {
+		'mail' : '%s'%(mail)
+		}
+	
+	if collection.update_many(details, {'$inc' : {'attempts' : -1}}):
+		doc= list(collection.find({"mail" : '%s'%(mail)}, {}))
+		print(f'==> {doc}')
+
+
+# Function to return remaining attempts
+def get_attempts(mail):
+	db= mongoClient['userdata']
+	collection= db['data']
+
+	details= {
+		'mail' : '%s'%(mail)
+		}
+	
+	attempts= list(collection.find(details, {"attempts": 1}))
+	attempt= attempts[0]['attempts']
+
+	return attempt
+
+
+# Function to create PDF Report and Mail to respective authorities
+def report_authority():
+	pass
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
+# Default Index Route
 @app.route('/')
 def index():
 	return render_template("index.html")
 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+# Login Page Function
 @app.route('/login')
 def login(check= {
-				'valid_Mail': True,
-				'valid_Pass': True,
-				# 'valid_user': True,
-				'valid_Captcha': True
-			}, msg= ''):
-	return render_template("login.html", check=check, msg= msg)
+				'valid_Mail' : True,
+				'valid_Pass' : True,
+				# 'valid_user' : True,
+				'valid_Captcha' : True
+			}, 
+			msg= '', 
+			values={
+				'mail' : ''
+			}):
+	# the checks are by default all True
+	# After validation and db checking, the checks can be False
+	# empty msg as the form is not filled
+	# (first time access of form)
+	return render_template("login.html", check=check, msg= msg, values= values)
 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+# Signup Page function
 @app.route('/signup')
 def signup(check= {
-				'valid_Mail': True,
-				'mail_Duplicate': True,
-				'valid_Pass': True,
-				'match_Pass': True,
-				'valid_Captcha': True
-			}, msg= ''):
-	return render_template("signup.html", check=check, msg= msg)
+				'valid_Mail' : True,
+				'mail_Duplicate' : True,
+				'valid_Pass' : True,
+				'match_Pass' : True,
+				'valid_Captcha' : True
+			}, 
+			msg= '', 
+			values= {
+				'mail' : ''
+			}):
+	# the checks are by default all True
+	# After validation and db checking, the checks can be False
+	# empty msg as the form is not filled
+	# (first time access of form)
+	return render_template("signup.html", check=check, msg= msg, values= values)
 
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+# I M P O R T A N T
+# 					I M P O R T A N T
+# 									  I M P O R T A N T
+
+# function to validate and check the login and signup information
 @app.route('/form', methods=['POST', 'GET'])
 def form(file_check= {
 			'valid_address': True,
@@ -175,65 +283,43 @@ def form(file_check= {
 			'valid_zip': True,
 			'valid_file': True,
 			'valid_Captcha': True
+		},
+		file_values={
+			'address' : '', 
+			'area' : '', 
+			'zipcode' : ''
 		}):
+	# all the file upload form checks are kept True by default (first time access of form)
 
+	# database to be used for verifying Login info
+	# or add the credentials after Signup
 	db= mongoClient['userdata']
 
+	# the collection used for valid user credentials
 	collection= db['data']
 
 	mail_regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+	# Regular Expression for valid mail id pattern
+	# --> does not check the validity(existence) of mail <--
+
 	pass_regex = r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,20}$'
+	# Regular Expression for valid password
+	# must include : 
+	# 1 Uppercase
+	# 1 Lowercase
+	# 1 Number/Digit
+	# 1 Special Character
+	# length must be between 8 to 20
 
+	mail = session.get('mail')
+	print(mail)
+
+	# Login/Signup form redirect
+	# All POST requests get validated here ↓
 	if request.method== "POST":
-		if request.form.get("page")== "Login":
 
-			check= {
-				'valid_Mail': True,
-				'valid_Pass': True,
-				# 'valid_user': True,
-				'valid_Captcha': True
-			}
-
-			mail= request.form.get("mail").strip().replace(' ', '')
-			password= request.form.get("password").strip().replace(' ', '')
-
-			if not mail or not re.fullmatch(mail_regex, mail):
-				check['valid_Mail']= False
-
-			if not password or not re.fullmatch(pass_regex, password):
-				check['valid_Pass']= False
-
-			if not captcha.validate():
-				check['valid_Captcha']= False
-
-			if all([i for i in check.values()]):
-
-				details= {
-					'mail': '%s'%(mail)
-				}
-
-				user_exist= collection.count_documents(details)
-				
-				if user_exist:
-					db_passwords= list(collection.find({"mail" : '%s'%(mail)}, {"pass": 1}))
-					db_password= db_passwords[0]['pass']
-
-					correct_pass= bcrypt.checkpw(password.encode(), db_password.encode())
-
-					print(user_exist)
-					print(password)
-					print(db_password)
-					print(correct_pass)
-
-					if user_exist and correct_pass:
-						return render_template("file_upload.html", msg= 'Logged in Successfully', check= file_check)
-				else:
-					return render_template("login.html", check= check, msg= 'User does not exist.')
-
-			else:
-				return render_template("login.html", check= check, msg= 'Try Again')
-
-		elif request.form.get("page")== "Signup":
+		# Condition for Signup Form
+		if request.form.get("page")== "Signup":
 
 			check= {
 				'valid_Mail': True,
@@ -242,63 +328,260 @@ def form(file_check= {
 				'match_Pass': True,
 				'valid_Captcha': True
 			}
+			# checks will be determined after checking all fields against regular expressions and DB
 
+
+			# field values given by the user for account creation
 			mail= request.form.get("mail").strip().replace(' ', '')
 			password= request.form.get("password").strip().replace(' ', '')
-			conf_pass= request.form.get("conf_pass").strip().replace(' ', '')
+			conf_pass= request.form.get("conf_pass").strip().replace(' ', '')	# confirm password field
+			# the password & confirm password are received in plain-text
+			# the leading, trailing & in-between spaces are removed by strip() & replace()
 
+			values= {'mail': mail}
+
+
+			# check for mail
+			# should not be empty
+			# match the regular Expression
 			if not mail or not re.fullmatch(mail_regex, mail):
+				# if any of the condition fails the 
+				# valid mail check is marked False
 				check['valid_Mail']= False
 
-			if collection.count_documents({'mail':'%s'%(mail)}):
-				check['mail_Duplicate']= False
 
-			if not password or not re.fullmatch(pass_regex, password) or not re.fullmatch(pass_regex, conf_pass):
+			# checking if the mail already exists in the DB
+			if collection.count_documents({'mail' : '%s'%(mail)}):
+				# if user already exists
+				check['mail_Duplicate']= False
+			
+
+			# check for plain-text password & confirm password
+			# should not be empty
+			# match the regular Expression
+			if not password or not conf_pass or not re.fullmatch(pass_regex, password) or not re.fullmatch(pass_regex, conf_pass):
+				# if any of the condition fails the 
+				# valid password check is marked False
 				check['valid_Pass']= False
 
+
+			# match password and confirm password fields
 			if password!= conf_pass:
+				# if the passwords do not match
+				# match password check is marked False
 				check['match_Pass']= False
 
-			salt = bcrypt.gensalt()
-			password= bcrypt.hashpw(password.encode(), salt)
 
-			# password = hashlib.sha256(str.encode(password)).hexdigest()
-
+			# validation of CAPTCHA
 			if not captcha.validate():
+				# if incorrect captcha
 				check['valid_Captcha']= False
 
-			if all([i for i in check.values()]):
 
+			# generating random salt that will be used to 
+			# add extra security after hashing of plaintext password
+			# salt type -> bytes
+			salt = bcrypt.gensalt()
+
+			# plain-text password is encoded to bytes and 
+			# salted to get hashed password 
+			# hashed password type -> bytes
+			password= bcrypt.hashpw(password.encode(), salt)
+
+
+			# if all the checks are True
+			if all([i for i in check.values()]):
+				
+				# dictionary used as query for creating user in DB
 				details= {
-					'mail': '%s'%(mail),
-					'pass': '%s'%(password.decode()),
-					'attempts': '%d'%(3)
+					'mail' : '%s' % (mail),
+					'pass' : '%s' % (password.decode()),
+					'attempts' : '%d' % (3)
 				}
 
+
+				# inersting the details in DB 
+				# creating the user account
 				if collection.insert_one(details):
-					return render_template("file_upload.html", msg= 'User Created Successfully', check= file_check)
+					
+					# mail id will be stored in token session
+					# to keep track of file uploads
+					session['mail']= mail
+
+					remaining_attempts= False
+
+					attempts= get_attempts(mail)
+
+					if attempts> 0:
+						remaining_attempts= True
+
+					# redirected to file upload form after successful user login					
+					return render_template("file_upload.html", msg= 'User Created Successfully', check= file_check, err= '', attempts= attempts, remaining_attempts= remaining_attempts, values= file_values)
+				
 				else:
-					return render_template("signup.html", check= check, msg= 'Failed to create user. Try Again')
+
+					# redirect to signup page if there was error in user creation
+					return render_template("signup.html", check= check, msg= 'Failed to create user. Try Again', values= values)
 
 			else:
-				return render_template("signup.html", check= check, msg= 'Try Again')
-		
+				if mail:
+					remaining_attempts= False
+
+					attempts= get_attempts(mail)
+
+					if attempts> 0:
+						remaining_attempts= True
+
+					return render_template("file_upload.html", check= file_check, msg= '', err= '', attempts= attempts, remaining_attempts= remaining_attempts, values= file_values)
+				else:
+					# the credentials are either empty or do not match the regular expression check
+					return render_template("signup.html", check= check, msg= 'Try Again', values= values)
+	
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+		# Condition for Login Form
+		elif request.form.get("page")== "Login":
+
+			check= {
+				'valid_Mail': True,
+				'valid_Pass': True,
+				# 'valid_user': True,
+				'valid_Captcha': True
+			}
+			# checks will be determined after checking all fields against regular expressions and DB
+
+
+			# the input credentials for Login
+			mail= request.form.get("mail").strip().replace(' ', '')
+			password= request.form.get("password").strip().replace(' ', '')
+			# the password is received in plain-text
+			# the leading, trailing & in-between spaces are removed by strip() & replace()
+
+
+			values= {'mail':mail}
+
+
+			# check for mail
+			# should not be empty
+			# match the regular Expression
+			if not mail or not re.fullmatch(mail_regex, mail):
+				# if any of the condition fails the 
+				# valid mail check is marked False
+				check['valid_Mail']= False
+
+
+			# check for plain-text password
+			# should not be empty
+			# match the regular Expression
+			if not password or not re.fullmatch(pass_regex, password):
+				# if any of the condition fails the 
+				# valid password check is marked False
+				check['valid_Pass']= False
+
+
+			# validation of CAPTCHA
+			if not captcha.validate():
+				# if incorrect captcha
+				check['valid_Captcha']= False
+
+
+			# if all the checks are True
+			if all([i for i in check.values()]):
+				
+
+				# the count of user will be returned (0 or 1)
+				# 1 if exists ; 0 if not
+				# the DB contains only unique mails 
+				user_exist= collection.count_documents({'mail' : '%s'%(mail)})
+				
+
+				# user found in DB
+				if user_exist:
+
+					# the password field will be returned for the mail id entered
+					db_passwords= list(collection.find({"mail" : '%s'%(mail)}, {"pass": 1}))
+					db_password= db_passwords[0]['pass']
+					
+
+					# password hashed and salted using Bcrypt
+					# checkpw function used to check the input password
+					# the function takes password(input) & password stored in database
+					# both parameters need to be in bytes and thus are encoded
+					# boolean value is returned (True for match)
+					correct_pass= bcrypt.checkpw(password.encode(), db_password.encode())
+
+					# print(user_exist)
+					# print(password)
+					# print(db_password)
+					# print(correct_pass)
+
+
+					# if the user is found and password is correct
+					if user_exist and correct_pass:
+						
+						# mail id will be used as session
+						session['mail']= mail
+						
+						remaining_attempts= False
+
+						attempts= get_attempts(mail)
+
+						if attempts> 0:
+							remaining_attempts= True
+
+						# redirected to file upload form after successful user login
+						return render_template("file_upload.html", msg= 'Logged in Successfully', check= file_check, err= '', attempts= attempts, remaining_attempts= remaining_attempts, values= file_values)
+					
+				else:
+					# redirect to login page if the user does not exist in DB
+					return render_template("login.html", check= check, msg= 'User does not exist.', values= values)
+
+			else:
+				if mail:
+					remaining_attempts= False
+
+					attempts= get_attempts(mail)
+
+					if attempts> 0:
+						remaining_attempts= True
+
+					return render_template("file_upload.html", check= file_check, msg= '', err= '', attempts= attempts, remaining_attempts= remaining_attempts, values= file_values)
+				else:
+					print('login else')
+					# the credentials are either empty or do not match the regular expression check
+					return render_template("login.html", check= check, msg= 'Try Again', values= values)
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+	# elif mail:
+
+	# 	print('elif', mail)
+	# 	remaining_attempts= False
+
+	# 	attempts= get_attempts(mail)
+
+	# 	if attempts> 0:
+	# 		remaining_attempts= True
+
+	# 	return render_template("file_upload.html", check= check, msg= '', err= '', attempts= attempts, remaining_attempts= remaining_attempts)
+
 	else:
+
+		print('redirct')
+		# if the page is accesses without logging in or signing up
+		# redirected to login page
 		return redirect('/login')
 
-@app.route('/admin')
-def admin():
-	return render_template("admin.html")
 
-@app.route('/admin_login', methods=['POST', 'GET'])
-def admin_panel():
-	return "Admin Page"
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 
 @app.route('/file_upload', methods=['POST', 'GET'])
-def file_upload():
-	if request.method == 'POST':
+def file_upload(
 
-		check= {
+			check= {
 			'valid_address': True,
 			'valid_area': True,
 			'valid_state': True,
@@ -307,6 +590,12 @@ def file_upload():
 			'valid_file': True,
 			'valid_Captcha': True
 		}
+):
+	mail = session.get('mail')
+	print('-----------------------------------')
+	print('Session Mail : ', mail, ':::', session.get('mail'))
+	print('-----------------------------------')
+	if request.method == 'POST':
 
 		address= request.form.get('address').strip()
 		area= request.form.get('area').strip()
@@ -363,10 +652,77 @@ def file_upload():
 			'detect_result': detect_result
 		}
 
+		values= {
+			'address': address,
+			'area': area,
+			'zipcode': zipcode
+		}
+
+		remaining_attempts= False
+
+		attempts= get_attempts(mail)
+		print(mail)
+
+		if attempts> 0:
+			remaining_attempts= True
+
 		if all([i for i in check.values()]):
-			return render_template("pothole_result.html", parameters=parameters, results= results)
+
+			# if pothole_percent< 60:
+				# os.remove()
+
+			mail= session.get('mail')
+
+			db= mongoClient['userdata']
+
+			collection= db['pothole_result']
+
+			details= {
+				'mail': '%s'%mail,
+				'address': '%s'%address,
+				'area': '%s'%area,
+				'state': '%s'%state,
+				'district': '%s'%district,
+				'zipcode': '%s'%zipcode,
+				'file_name': '%s'%file_name,
+				'pothole_percent': '%s'%pothole_percent
+			}
+
+			if collection.insert_one(details):
+
+				print('inserted', details)
+
+				print(session.get('mail'))
+
+				print(list(db['data'].find({"mail" : mail})))
+
+				db['data'].update_many({"mail" : mail}, {'$inc': {'attempts': -1}})
+
+				print(list(db['data'].find({"mail" : mail})))
+
+				remaining_attempts= False
+
+				attempts= get_attempts(mail)
+
+				if attempts> 0:
+					remaining_attempts= True
+				
+				return render_template("pothole_result.html", parameters=parameters, results= results, attempts= attempts, remaining_attempts= remaining_attempts)
+			else:
+				return render_template("file_upload.html", check= check, msg= '', err= 'Some Error Occurred. Try Again.', attempts= attempts, remaining_attempts= remaining_attempts, values= values)
 		else:
-			return render_template("file_upload.html", check= check, msg= '')
+			return render_template("file_upload.html", check= check, msg= '', err= '', attempts= attempts, remaining_attempts= remaining_attempts, values= values)
+		
+	elif mail:
+		remaining_attempts= False
+
+		attempts= get_attempts(mail)
+
+		if attempts> 0:
+			remaining_attempts= True
+
+		return render_template("file_upload.html", check= check, msg= '', err= '', attempts= attempts, remaining_attempts= remaining_attempts, values= values)
+	
 	return redirect('/login')
 
 
@@ -375,5 +731,53 @@ def file_upload():
 # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
+# A D M I N
+# 			A D M I N
+# 					  A D M I N
+
+# Admin Login Form
+@app.route('/admin')
+def admin():
+	return render_template("admin.html")
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+# Admin Dashboard
+@app.route('/admin_login', methods=['POST', 'GET'])
+def admin_panel():
+	return "Admin Page"
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+
+# Main Function -->
 if __name__ == "__main__":
-	app.run(debug=True, host='0.0.0.0')
+
+    app.run(debug=True)
+    # app.run(debug=True, host='0.0.0.0', use_reloader= False)
+	# file_upload_attempt_update.add_job(
+	# 	id='Update Attempts', 
+	# 	func= update_attempts, 
+	# 	trigger= 'cron', 
+	# 	hour= 0,
+	# 	minute= 0
+	# 	)
+	
+	# file_upload_attempt_update.start()
+	
+	# authority_report.add_job(
+	# 	id='Update Attempts', 
+	# 	func= update_attempts, 
+	# 	trigger= 'cron', 
+	# 	hour= 0,
+	# 	minute= 0
+	# 	)
+	
+	# authority_report.start()

@@ -12,9 +12,15 @@
     </a>
     <br />
     <br />
-    <a href="/form">
+    {% if session.get('mail') %}
+    <a href="/file_upload">
       <button>Upload File</button>
     </a>
+    {% else %}
+    <a href="/login">
+      <button>Upload File</button>
+    </a>
+    {% endif %}
     <br />
     <br />
     <h1>Pothole Detection Result</h1>
@@ -33,6 +39,10 @@
     <br />
     Percentage : {{ results['pothole_percent'] }}
     <br />
-    {{ results['detect_result'] }}
+    {{ results['detect_result'] }} {% if not remaining_attempts %}
+    <h1>You have exhausted all your attempts for today</h1>
+    {% endif %}
+
+    <h1>Remaining Attempts : {{ attempts }} ::: {{ remaining_attempts }}</h1>
   </body>
 </html>

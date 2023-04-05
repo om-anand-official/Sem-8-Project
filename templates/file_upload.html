@@ -15,6 +15,8 @@
 
     {% if msg %}
     <p style="color: limegreen">{{ msg }}</p>
+    {% endif %} {% if err %}
+    <p style="color: red">{{ err }}</p>
     {% endif %}
 
     <!-- <script src="script.js"></script> -->
@@ -29,9 +31,15 @@
       Be a Responsible Citizen and Report it !
     </h3>
 
+    {% if remaining_attempts %}
     <form action="/file_upload" method="post" enctype="multipart/form-data">
       Address/Landmark :
-      <input type="text" name="address" required />
+      <input
+        type="text"
+        name="address"
+        value="{{ values['address'] }}"
+        required
+      />
 
       {% if not check["valid_address"] %}
       <br />
@@ -42,7 +50,7 @@
       <br />
       <br />
       Area :
-      <input type="text" name="area" required />
+      <input type="text" name="area" value="{{ values['area'] }}" required />
 
       {% if not check["valid_area"] %}
       <br />
@@ -88,7 +96,13 @@
       <br />
 
       ZipCode :
-      <input type="text" name="zipcode" pattern="[0-9]{6}" required />
+      <input
+        type="text"
+        name="zipcode"
+        value="{{ values['zipcode'] }}"
+        pattern="[0-9]{6}"
+        required
+      />
 
       {% if not check["valid_zip"] %}
       <br />
@@ -125,7 +139,11 @@
 
       <input type="submit" value="Submit" />
     </form>
+    {% else %}
+    <h1>You have exhausted all your attempts for today</h1>
+    {% endif %}
 
+    <h1>Remaining Attempts : {{ attempts }} ::: {{ remaining_attempts }}</h1>
     <script>
       var Gujarat = [
         "Ahmedabad",

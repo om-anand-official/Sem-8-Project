@@ -13,7 +13,7 @@
     <h1>Signup</h1>
     <form action="/form" method="post">
       Mail :
-      <input type="email" name="mail" required />
+      <input type="email" name="mail" value="{{ values['mail'] }}" required />
 
       {% if not check["valid_Mail"] %}
       <br />
