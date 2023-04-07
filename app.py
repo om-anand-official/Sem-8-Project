@@ -63,7 +63,7 @@ from datetime import datetime as dt
 UPLOAD_FOLDER = 'uploads\\'
 
 # no other extensions allowed for uploaded file
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg'}
 
 # Flask Application Initialized
 app = Flask(__name__)
@@ -230,6 +230,7 @@ def get_attempts(mail):
 
 	# getting the attempt count from the BSON
 	attempt = attempts[0]['attempts']
+	print(attempt, type(attempt))
 
 	# the attempt count is returned
 	return attempt
@@ -248,6 +249,7 @@ def report_authority():
 # Default Index Route
 @app.route('/')
 def index():
+	session['mail']= None
 	return render_template("index.html")
 
 
@@ -457,7 +459,7 @@ def form(file_check = {
 				details= {
 					'mail' : '%s' % (mail),
 					'pass' : '%s' % (password.decode()),
-					'attempts' : '%d' % (3)
+					'attempts' : 3
 				}
 
 
@@ -506,31 +508,31 @@ def form(file_check = {
 			# like mail/password regex error
 			else:
 				
-				# check if the session is active
-				if mail:
-					# initially declaration of remaining attempts
-					remaining_attempts = False
+				# # check if the session is active
+				# if mail:
+				# 	# initially declaration of remaining attempts
+				# 	remaining_attempts = False
 
-					# the actual count of attempts remaining based on mail
-					attempts = get_attempts(mail)
+				# 	# the actual count of attempts remaining based on mail
+				# 	attempts = get_attempts(mail)
 
-					# mark remaining attempts as True if user has got attempts remaining
-					if attempts> 0:
-						remaining_attempts = True
+				# 	# mark remaining attempts as True if user has got attempts remaining
+				# 	if attempts> 0:
+				# 		remaining_attempts = True
 
-					# redirected to file upload form if form is refershed without submitting
-					return render_template(
-						"file_upload.html", 
-						check = file_check, 
-						msg = '', 
-						err = '', 
-						attempts = attempts, 
-						remaining_attempts = remaining_attempts, 
-						values = file_values
-						)
+				# 	# redirected to file upload form if form is refershed without submitting
+				# 	return render_template(
+				# 		"file_upload.html", 
+				# 		check = file_check, 
+				# 		msg = '', 
+				# 		err = '', 
+				# 		attempts = attempts, 
+				# 		remaining_attempts = remaining_attempts, 
+				# 		values = file_values
+				# 		)
 				
-				# incase session is not active
-				else:
+				# # incase session is not active
+				# else:
 
 					# the credentials are either empty or do not match the regular expression check
 					return render_template(
@@ -663,30 +665,30 @@ def form(file_check = {
 			# like mail/password regex error
 			else:
 				
-				# check if the session is active
-				if mail:
-					# initially declaration of remaining attempts
-					remaining_attempts = False
+				# # check if the session is active
+				# if mail:
+				# 	# initially declaration of remaining attempts
+				# 	remaining_attempts = False
 
-					# the actual count of attempts remaining based on mail
-					attempts = get_attempts(mail)
+				# 	# the actual count of attempts remaining based on mail
+				# 	attempts = get_attempts(mail)
 
-					# mark remaining attempts as True if user has got attempts remaining
-					if attempts > 0:
-						remaining_attempts = True
+				# 	# mark remaining attempts as True if user has got attempts remaining
+				# 	if attempts > 0:
+				# 		remaining_attempts = True
 
-					# redirected to file upload form if form is refershed without submitting
-					return render_template(
-						"file_upload.html", 
-						check = file_check, 
-						msg = '', 
-						err = '', 
-						attempts = attempts, 
-						remaining_attempts = remaining_attempts, 
-						values = file_values
-						)
+				# 	# redirected to file upload form if form is refershed without submitting
+				# 	return render_template(
+				# 		"file_upload.html", 
+				# 		check = file_check, 
+				# 		msg = '', 
+				# 		err = '', 
+				# 		attempts = attempts, 
+				# 		remaining_attempts = remaining_attempts, 
+				# 		values = file_values
+				# 		)
 				
-				else:
+				# else:
 
 					# the credentials are either empty or do not match the regular expression check
 					return render_template(
@@ -733,6 +735,11 @@ def file_upload(check = {
 			'valid_zip' : True,
 			'valid_file' : True,
 			'valid_Captcha' : True
+		}, 
+		values= {
+			'address' : '',
+			'area' : '',
+			'zipcode' : ''
 		}):
 	# checks will be determined after verifying every field
 	
@@ -765,26 +772,6 @@ def file_upload(check = {
 		pothole_percent, detect_result = 0, 0
 		
 
-		# if the file name matches the allowed extensions
-		if allowed_file(file.filename):
-
-			# replaces any extra characters with underscore (_)
-			file_name= secure_filename(file.filename)
-
-			# save the file for pothole detection at uploads folder
-			file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
-			
-			# file path is stored that will be fed to ML model for pothole detection
-			path= os.path.join(app.config['UPLOAD_FOLDER'], file_name)
-
-			# pothole detection results after ML model
-			pothole_percent, detect_result= model(glob.glob(path))
-
-		else:
-			# invalid file type
-			check['valid_file']= False
-
-
 		if not address:
 			# empty address field
 			check['valid_address']= False
@@ -815,9 +802,29 @@ def file_upload(check = {
 
 
 		# validation of CAPTCHA
+		# print('Answer : ', captcha.get_answer(), captcha.validate(), captcha)
 		if not captcha.validate():
-			# if incorrect captcha
 			check['valid_Captcha']= False
+
+
+		# if the file name matches the allowed extensions
+		if allowed_file(file.filename):
+
+			# replaces any extra characters with underscore (_)
+			file_name= secure_filename(file.filename)
+
+			# save the file for pothole detection at uploads folder
+			file.save(os.path.join(app.config['UPLOAD_FOLDER'], file_name))
+			
+			# file path is stored that will be fed to ML model for pothole detection
+			path= os.path.join(app.config['UPLOAD_FOLDER'], file_name)
+
+			# pothole detection results after ML model
+			pothole_percent, detect_result= model(glob.glob(path))
+
+		else:
+			# invalid file type
+			check['valid_file']= False
 
 		parameters= {
 			'address': address,
@@ -843,6 +850,7 @@ def file_upload(check = {
 
 		attempts= get_attempts(mail)
 		print(mail)
+		print(check)
 
 		if attempts> 0:
 			remaining_attempts= True
@@ -940,19 +948,17 @@ def admin_panel():
 
 # Main Function -->
 if __name__ == "__main__":
+	file_upload_attempt_update.add_job(
+		id='Update Attempts', 
+		func= update_attempts, 
+		trigger= 'cron', 
+		hour= 15,
+		minute= 30
+	)
 
-    app.run(debug=True)
-    
-	# file_upload_attempt_update.add_job(
-	# 	id='Update Attempts', 
-	# 	func= update_attempts, 
-	# 	trigger= 'cron', 
-	# 	hour= 0,
-	# 	minute= 0
-	# 	)
-	
-	# file_upload_attempt_update.start()
-	
+	file_upload_attempt_update.start()
+
+	app.run(debug=True)
 	# authority_report.add_job(
 	# 	id='Update Attempts', 
 	# 	func= update_attempts, 
