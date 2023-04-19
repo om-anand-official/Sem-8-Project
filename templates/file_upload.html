@@ -113,9 +113,17 @@
       <br />
       <br />
 
-      <input type="file" name="road_img" required />
-      <p>File Formats Supported : JPG, PNG, JPEG</p>
+      <input
+        type="file"
+        name="road_img"
+        id="road_img"
+        accept="image/*"
+        onchange="Filevalidation()"
+        required
+      />
+      <p>File Formats Supported : JPG, JPEG</p>
 
+      <p style="color: red" id="file_size"></p>
       {% if not check["valid_file"] %}
       <br />
       <br />
@@ -264,6 +272,27 @@
 
         document.getElementById("district").innerHTML = htmlString;
       }
+
+      Filevalidation = () => {
+        const fi = document.getElementById("road_img");
+
+        if (fi.files.length > 0) {
+          for (const i = 0; i <= fi.files.length - 1; i++) {
+            const fsize = fi.files.item(i).size;
+            const file = Math.round(fsize / 1024);
+            // The size of the file.
+
+            if (file >= 2048) {
+              alert("File too Big, please select a file less than 2 MB");
+              document.getElementById("file_size").innerText =
+                "File Size >2 MB";
+              document.getElementById("road_img").value = "";
+            } else {
+              document.getElementById("file_size").innerText = "";
+            }
+          }
+        }
+      };
     </script>
   </body>
 </html>

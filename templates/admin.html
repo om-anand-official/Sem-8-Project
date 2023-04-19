@@ -12,8 +12,8 @@
     </a>
     <h1>Admin Panel</h1>
     <form action="/admin_login" method="post">
-      Mail :
-      <input type="email" name="mail" placeholder="abcd@xyz.xyz" required />
+      ID :
+      <input type="text" name="uid" pattern="[a-zA-Z]{3}[0-9]{11}" required />
       <br />
       <br />
 
@@ -22,7 +22,8 @@
       <br />
       <br />
 
-      {% if errors["valid_Mail"] or errors["valid_Pass"] %}
+      {% if not (errors["valid_ID"] and errors["valid_Pass"] and
+      errors["valid_admin"]) %}
       <p style="color: red">Incorrect Credentials</p>
       {% endif %}
 
@@ -34,7 +35,7 @@
       <br />
       <br />
 
-      {% if errors["valid_Captcha"] %}
+      {% if not errors["valid_Captcha"] %}
       <p style="color: red">Incorrect CAPTCHA</p>
       {% endif %}
 

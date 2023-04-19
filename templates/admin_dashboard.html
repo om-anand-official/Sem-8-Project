@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard</title>
+  </head>
+  <body>
+    Admin Dashboard
+    <br />
+    Graph - State-wise
+    <br />
+    <div
+      id="state_bar_graph"
+      class="state_bar_graph"
+      style="height: 550px; width: 800px"
+    ></div>
+    <br />
+    Graph - District-wise
+    <br />
+    <div
+      id="district_state_bar_graph"
+      class="district_state_bar_graph"
+      style="height: 550px; width: 800px"
+    ></div>
+  </body>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script type="text/javascript">
+    let bar_state = {{ state_bar_graph | safe }};
+    Plotly.plot('state_bar_graph', bar_state, {});
+
+    let bar_state_district = {{ state_district_bar_graph | safe }};
+    Plotly.plot('district_state_bar_graph', bar_state_district, {});
+  </script>
+</html>
