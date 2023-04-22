@@ -5,44 +5,209 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Pothole Detection Result</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dist/output.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
   </head>
-  <body>
-    <a href="/">
-      <button>Home</button>
-    </a>
-    <br />
-    <br />
-    {% if session.get('mail') %}
-    <a href="/file_upload">
-      <button>Upload File</button>
-    </a>
-    {% else %}
-    <a href="/login">
-      <button>Upload File</button>
-    </a>
-    {% endif %}
-    <br />
-    <br />
-    <h1>Pothole Detection Result</h1>
-    <br />
-    Address : {{ parameters['address'] }}
-    <br />
-    Area : {{ parameters['area'] }}
-    <br />
-    ZipCode : {{ parameters['zipcode'] }}
-    <br />
-    District : {{ parameters['district'] }}
-    <br />
-    State : {{ parameters['state'] }}
-    <br />
-    File : {{ parameters['file_name'] }}
-    <br />
-    Percentage : {{ results['pothole_percent'] }}
-    <br />
-    {{ results['detect_result'] }} {% if not remaining_attempts %}
-    <h1>You have exhausted all your attempts for today</h1>
-    {% endif %}
+  <body class="bg-neutral-900 relative h-screen">
+    <nav class="flex bg-yellow-300 items-center h-24 justify-between">
+      <div>
+        <a href="/">
+          <button
+            class="hover:bg-yellow-300 hover:text-black border-[3px] border-black bg-black text-yellow-300 font-bold text-xl ml-5 py-1 px-1 rounded-lg h-12 w-12"
+          >
+            <!-- <button class="border-4 border-black mx-5 p-2 h-10 w-10 rounded-full"> -->
+            <i class="fa-solid fa-house"></i>
+          </button>
+        </a>
 
-    <h1>Remaining Attempts : {{ attempts }} ::: {{ remaining_attempts }}</h1>
+        <span class="p-2 text-2xl font-semibold"> Road Health Management </span>
+      </div>
+
+      <ul class="float-right">
+        <li>
+          <span class="p-2 text-2xl font-semibold mx-5">
+            Remaining Attempts : {{ attempts }}
+          </span>
+        </li>
+      </ul>
+    </nav>
+
+    <div
+      class="container mx-auto flex-1 items-center justify-center px-2 py-5 w-2/3"
+    >
+      <div
+        class="bg-neutral-900 py-5 my-5 rounded-3xl shadow-md text-yellow-300 w-3/4 border-4 border-yellow-300 items-center justify-center flex mx-auto"
+      >
+        <div class="font-medium px-2 w-3/4">
+          <p class="mb-8 text-3xl text-center font-semibold">
+            Pothole Detection Result
+          </p>
+
+          <!-- Address/Landmark : {{ parameters['address'] }} -->
+          <div class="justify-around items-center flex">
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                <i class="fa-solid fa-map-pin mr-2"></i>
+                Address/Landmark
+              </span>
+            </div>
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                : {{ parameters['address'] }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Area : {{ parameters['area'] }} -->
+          <div class="justify-around items-center flex">
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                <i class="fa-solid fa-location-dot mr-2"></i>
+                Area
+              </span>
+            </div>
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                : {{ parameters['area'] }}
+              </span>
+            </div>
+          </div>
+
+          <!-- ZipCode : {{ parameters['zipcode'] }} -->
+          <div class="justify-around items-center flex">
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                <i class="fa-solid fa-circle-info mr-2"></i>
+                ZipCode
+              </span>
+            </div>
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                : {{ parameters['zipcode'] }}
+              </span>
+            </div>
+          </div>
+
+          <!-- District : {{ parameters['district'] }} -->
+          <div class="justify-around items-center flex">
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                <i class="fa-solid fa-map-location-dot mr-2"></i>
+                District
+              </span>
+            </div>
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                : {{ parameters['district'] }}
+              </span>
+            </div>
+          </div>
+
+          <!-- State : {{ parameters['state'] }} -->
+          <div class="justify-around items-center flex">
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                <i class="fa-solid fa-globe mr-2"></i>
+                State
+              </span>
+            </div>
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                : {{ parameters['state'] }}
+              </span>
+            </div>
+          </div>
+
+          <!-- File : {{ parameters['file_name'] }} -->
+          <div class="justify-around items-center flex">
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                <i class="fa-solid fa-file mr-2"></i>
+                File
+              </span>
+            </div>
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                : {{ parameters['file_name'] }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Percentage : {{ results['pothole_percent'] }} -->
+          <div class="justify-around items-center flex">
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                <i class="fa-solid fa-percent mr-2"></i>
+                Pothole %age
+              </span>
+            </div>
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                : {{ results['pothole_percent'] }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Pothole Detection Result : {{ results['detect_result'] }} -->
+          <div class="justify-around items-center flex">
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                <i class="fa-solid fa-square-poll-vertical mr-2"></i>
+                Pothole Detection Result
+              </span>
+            </div>
+            <div class="w-1/2">
+              <span class="text-lg font-medium">
+                : {{ results['detect_result'] }}
+              </span>
+            </div>
+          </div>
+
+          <!-- <h1>Remaining Attempts : {{ attempts }} ::: {{ remaining_attempts }}</h1> -->
+          {% if session.get('mail') %}
+
+          <a href="/file_upload" class="flex items-center justify-center">
+            <button
+              class="border border-black p-2 rounded my-3 text-neutral-900 bg-yellow-300 cursor-pointer hover:bg-yellow-700 hover:text-white w-1/2"
+            >
+              Upload File
+            </button>
+          </a>
+
+          {% else %}
+
+          <a href="/login">
+            <button
+              class="border border-black p-2 rounded my-3 text-neutral-900 bg-yellow-300 cursor-pointer hover:bg-yellow-700 hover:text-white w-1/2"
+            >
+              Login
+            </button>
+          </a>
+
+          {% endif %}
+        </div>
+      </div>
+
+      {% if not remaining_attempts %}
+      <div
+        class="bg-neutral-900 py-8 my-5 rounded-3xl shadow-md text-yellow-300 w-full border-4 border-yellow-300 items-center justify-center flex"
+      >
+        <div class="font-medium px-2">
+          <p class="text-3xl text-center font-semibold">
+            You have exhausted all your attempts for today
+          </p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
   </body>
 </html>

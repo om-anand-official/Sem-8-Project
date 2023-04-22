@@ -5,15 +5,74 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Home</title>
+    <!-- <link rel="stylesheet" href="style.css" /> -->
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dist/output.css') }}"
+    />
   </head>
-  <body>
-    <a href="/login">
-      <button>Login</button>
-    </a>
-    <br /><br />
-    <a href="/signup">
-      <button>Signup</button>
-    </a>
+  <body class="bg-neutral-900 relative h-screen">
+    <nav class="flex bg-yellow-300 justify-between items-center h-48">
+      <span class="mx-5 p-5 text-5xl font-semibold">
+        Road Health Management
+      </span>
+      <ul class="flex mx-5 p-5 space-x-5 mr-16">
+        <li>
+          <a href="/signup">
+            <button
+              class="bg-yellow-300 border-[3px] border-black hover:bg-black font-bold text-xl py-3 px-7 rounded-full text-black hover:text-yellow-300 w-40"
+            >
+              Register
+            </button>
+          </a>
+        </li>
+        <li>
+          <a href="/login">
+            <button
+              class="bg-yellow-300 border-[3px] border-black hover:bg-black font-bold text-xl py-3 px-7 rounded-full text-black hover:text-yellow-300 w-40"
+            >
+              <!-- class="bg-yellow-300 border-4 border-blue-600 hover:bg-blue-600 font-bold text-xl py-3 px-7 rounded-full text-blue-800 hover:text-white" -->
+              <!-- class="rounded-lg border-2 border-black bg-yellow-300 px-3 py-3" -->
+              Login
+            </button>
+          </a>
+        </li>
+      </ul>
+    </nav>
+    <div class="text-white flex justify-around items-center">
+      <div class="mx-5 w-1/2 p-5 space-y-3">
+        <span class="text-4xl font-semibold"> About </span>
+        <p class="text-xl font-medium w-auto text-justify pt-5">
+          Lorem ipsum, dolor sit amet consectetur adipisicing elit. Incidunt
+          esse nulla, rem praesentium assumenda minus nam reprehenderit
+          quibusdam consequatur porro recusandae ducimus fuga corporis? Veniam
+          voluptatibus minus vel esse ullam.
+        </p>
+      </div>
+      <div class="w-1/2 items-center flex justify-center p-10">
+        <img
+          src="{{ url_for('static', filename='images/road-health.jpg') }}"
+          alt="road-health"
+          class="rounded-3xl h-[375px]"
+        />
+      </div>
+    </div>
+
+    <footer
+      class="bg-neutral-200 text-center dark:bg-neutral-700 lg:text-left inset-x-0 bottom-0"
+    >
+      <div
+        class="p-4 text-center text-neutral-700 dark:text-neutral-200 text-lg font-medium"
+      >
+        Made by Group-18
+        <!-- © 2023 Copyright: -->
+        <!-- <a
+          class="text-neutral-800 dark:text-neutral-400"
+          href="https://tailwind-elements.com/"
+          >Tailwind Elements</a
+        > -->
+      </div>
+    </footer>
     <!-- <form method="post">
       {{ captcha() }}
       <input type="text" name="captcha" />

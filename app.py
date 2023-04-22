@@ -1,3 +1,11 @@
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# LIBRARIES SECTION
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
 # Universally Unique Identifier lib for the creation of session and CAPTCHA
 import uuid
 
@@ -58,36 +66,63 @@ from datetime import datetime as dt
 # Library to check the file format by header
 import magic
 
-
+# Pandas used to create a dataframe of all pothole data
+# the dataframe will be used to plot graph using plotly
 import pandas as pd
-import plotly.express as px
-import plotly.io as pio
-import json
+
+# library used to plot interactive graphs for web-apps
 import plotly
 
+# used to plot the graph from pandas dataframe
+import plotly.express as px
 
+# .io used for input/output and save graph as image
+import plotly.io as pio
+
+# graph is converted to JSON which will be converted to interactive image
+# via Javascript on admin dashboard
+import json
+
+# mail libraries
 import email, smtplib, ssl
+
+# used to format the sender account name
 from email.utils import formataddr
-import os
-from datetime import datetime as dt
+
+# Encode file in ASCII characters to send by email
 from email import encoders
+
+# Multipurpose Internet Mail Extensions
+# lets users exchange different kinds of data files, including audio, video, images and application programs, over email
 from email.mime.base import MIMEBase
+
+# used to create a multipart message
+# text-content + mime attachment
 from email.mime.multipart import MIMEMultipart
+
+# add body text along with attachments
 from email.mime.text import MIMEText
 
-
+# library to work with Word Documents
 import docx
+
+# scale images in Word Documents
 from docx.shared import Inches, Cm
+
+# convert .docx to .pdf (report making)
 from docx2pdf import convert
-import os
-import matplotlib.pyplot as plt
-import numpy as np
-from datetime import datetime as dt
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# APP CONFIGURATIONS SECTION
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # path to uploads folder where necessary files will be stored
@@ -98,6 +133,7 @@ ALLOWED_EXTENSIONS = {"jpg", "jpeg"}
 
 # Flask Application Initialized
 app = Flask(__name__)
+
 
 # The Uploads Folder where the valid Images will be stored
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
@@ -124,6 +160,7 @@ app.config["SESSION_MONGODB"] = mongoClient
 app.config["SESSION_TYPE"] = "mongodb"
 app.config["SESSION_PERMANENT"] = False
 
+
 # Flask Session for creating CAPTCHA
 Session(app)
 
@@ -141,13 +178,16 @@ authority_report = APScheduler()
 # clear previous sessions every 6 hours
 clr_sessions = APScheduler()
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# Scheduled Functions
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# SCHEDULED FUNCTIONS
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # Function to update attempts everyday at
@@ -181,16 +221,19 @@ def clear_sessions():
 
     # delete all previous sessions
     collection.drop()
-    print("deleted all sessions")
+    print(f"==> {dt.now()} :: All sessions cleared")
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# File-related Functions
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# FILE-RELATED FUNCTIONS
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # Function to check the validity of filename
@@ -200,6 +243,7 @@ def allowed_file(filename):
 
 # check file validity from the file header
 def valid_file(file):
+    #
     ls = str(magic.from_file(file, mime=True)).lower().split("/")
     print("-> ", ls)
     print(ls[0], ls[1])
@@ -255,13 +299,16 @@ def model(image):
     return pothole_percent, detect_result
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# Database User Functions
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# DATABASE FUNCTIONS
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # Function to decrement attempt after uploading image
@@ -312,13 +359,16 @@ def get_attempts(mail):
     return attempt
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# Mail Function
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# REPORT MAIL FUNCTION
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # Function to create PDF Report and Mail to respective authorities
@@ -339,11 +389,9 @@ def report_authority():
     # Add a Title to the document
     doc.add_heading(subject, 0)
 
-    # Image with defined size
     doc.add_heading("State-wise Pothole Reports", 1)
 
-    # doc.add_picture('graph.png')
-
+    # Image with defined size
     doc.add_picture("state_bar_graph.jpg", width=Cm(16), height=Cm(12))
 
     doc.add_page_break()
@@ -375,17 +423,21 @@ def report_authority():
     for i, j in enumerate(head):
         row[i].text = j.capitalize()
 
-    import pymongo as mdb
+    # client = mongoClient(host="127.0.0.1", port=27017)
 
-    client = mdb.MongoClient(host="127.0.0.1", port=27017)
-
-    db = client["userdata"]
+    db = mongoClient["userdata"]
 
     collection = db["pothole_result"]
 
     all_doc = collection.find({}, {"_id": 0, "mail": 0})
 
     ls = [[value for value in doc.values()] for doc in all_doc]
+
+    df = pd.DataFrame.from_records(list(all_doc))
+
+    # print(df)
+
+    df.to_csv("Weekly Report-" + dt.now().strftime("%d-%m-%Y") + ".csv", index=False)
 
     for data in ls:
         row = table.add_row().cells
@@ -396,19 +448,31 @@ def report_authority():
     # table.style = "Light List"
 
     # Now save the document to a location
-    doc.save(subject + ".docx")
+    file = subject + ".docx"
+
+    # doc.add_page_break()
+
+    # images = os.listdir(UPLOAD_FOLDER)
+
+    # print(images)
+    # for img in images:
+    #     doc.add_paragraph(img)
+    #     print(UPLOAD_FOLDER + img)
+    #     doc.add_picture("/uploads/" + img, width=Cm(8), height=Cm(6))
+
+    doc.save(file)
     print("docx saved")
     print([i for i in os.listdir() if ".docx" in i])
 
-    convert(subject + ".docx")
-    print("pdf saved")
-    print([i for i in os.listdir() if ".pdf" in i])
+    # convert(file)
+    # print("pdf saved")
+    # print([i for i in os.listdir() if ".pdf" in i])
 
-    os.remove(subject + ".docx")
+    # os.remove(file)
     os.remove("state_bar_graph.jpg")
     os.remove("state_district_bar_graph.jpg")
 
-    db = client["userdata"]
+    db = mongoClient["userdata"]
 
     collection = db["admin_mail"]
 
@@ -418,12 +482,12 @@ def report_authority():
 
     # ls= [i for i in j for j in ls]
 
-    print(receiver_emails)
+    # print(receiver_emails)
 
     body = (
         "Road Health Management Report "
         + dt.now().strftime("%d-%m-%Y")
-        + " (PDF) attached below PFA."
+        + " attached below PFA."
     )
     sender_email = "anand.extra.01@gmail.com"
     receiver_email = "omanand2002@gmail.com"
@@ -435,35 +499,38 @@ def report_authority():
     message = MIMEMultipart()
     message["From"] = formataddr(("Road Health Management", sender_email))
     message["To"] = receiver_email
-    # message["To"] = receiver_emails
+    # message["To"] = ",".join(m for m in receiver_emails)
     message["Subject"] = subject
     # message["Bcc"] = receiver_email  # Recommended for mass emails
 
     # Add body to email
     message.attach(MIMEText(body, "plain"))
 
-    filename = (
-        "Weekly Report-" + dt.now().strftime("%d-%m-%Y") + ".pdf"
-    )  # In same directory as script
+    files = [
+        "Weekly Report-" + dt.now().strftime("%d-%m-%Y") + ".docx",
+        "Weekly Report-" + dt.now().strftime("%d-%m-%Y") + ".csv",
+    ]  # In same directory as script
 
-    # Open PDF file in binary mode
-    with open(filename, "rb") as attachment:
-        # Add file as application/octet-stream
-        # Email client can usually download this automatically as attachment
-        part = MIMEBase("application", "octet-stream")
-        part.set_payload(attachment.read())
+    for filename in files:
+        # Open PDF file in binary mode
+        with open(filename, "rb") as attachment:
+            # Add file as application/octet-stream
+            # Email client can usually download this automatically as attachment
+            part = MIMEBase("application", "octet-stream")
+            part.set_payload(attachment.read())
 
-    # Encode file in ASCII characters to send by email
-    encoders.encode_base64(part)
+        # Encode file in ASCII characters to send by email
+        encoders.encode_base64(part)
 
-    # Add header as key/value pair to attachment part
-    part.add_header(
-        "Content-Disposition",
-        f"attachment; filename= {filename}",
-    )
+        # Add header as key/value pair to attachment part
+        part.add_header(
+            "Content-Disposition",
+            f"attachment; filename= {filename}",
+        )
 
-    # Add attachment to message and convert message to string
-    message.attach(part)
+        # Add attachment to message and convert message to string
+        message.attach(part)
+
     text = message.as_string()
 
     # Log in to server using secure context and send email
@@ -473,17 +540,19 @@ def report_authority():
         # server.sendmail(sender_email, receiver_emails, text)
         server.sendmail(sender_email, receiver_email, text)
 
-    print("mail sent successfully")
-    pass
+    print(f"==> {dt.now()} :: Emails sent")
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# Graph Functions
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# GRAPH FUNCTIONS
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 def graph_state(count_by_state, save_graph):
@@ -492,7 +561,13 @@ def graph_state(count_by_state, save_graph):
     print(state_df)
 
     # Create Bar chart
-    fig = px.bar(state_df, y="Potholes", x="State", color="State")
+    fig = px.bar(
+        state_df,
+        y="Potholes",
+        x="State",
+        color="State",
+        title="State-wise Pothole Records",
+    )
 
     # Create graphJSON
     graph_bar = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -507,10 +582,16 @@ def graph_state_district(count_by_state_district, save_graph):
     district_state_df = pd.DataFrame(
         count_by_state_district, columns=["District", "Potholes", "State"]
     )
-    print(district_state_df)
+    # print(district_state_df)
 
     # Create Bar chart
-    fig = px.bar(district_state_df, y="Potholes", x="District", color="State")
+    fig = px.bar(
+        district_state_df,
+        y="Potholes",
+        x="District",
+        color="State",
+        title="District-wise Pothole Records",
+    )
 
     # Create graphJSON
     graph_bar = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -528,8 +609,8 @@ def get_counts(save_graph=False):
 
     # STATES_LIST_INDIA = ["Gujarat", "Maharashtra", "Delhi"]
 
-    print(collection.distinct("state"))
-    print(collection.distinct("district", {"state": "Gujarat"}))
+    # print(collection.distinct("state"))
+    # print(collection.distinct("district", {"state": "Gujarat"}))
 
     states = collection.distinct("state")
 
@@ -539,16 +620,16 @@ def get_counts(save_graph=False):
 
     for state in states:
         state_count = collection.count_documents({"state": state})
-        print(state, state_count)
+        # print(state, state_count)
         count_by_state.append([state, state_count])
         districts = collection.distinct("district", {"state": state})
         for district in districts:
             district_count = collection.count_documents({"district": district})
-            print(state, district, district_count)
+            # print(state, district, district_count)
             count_by_state_district.append([district, district_count, state])
 
-    print(count_by_state)
-    print(count_by_state_district)
+    # print(count_by_state)
+    # print(count_by_state_district)
 
     return (
         graph_state(count_by_state, save_graph),
@@ -556,18 +637,18 @@ def get_counts(save_graph=False):
     )
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-# Flask Routes and Functions
+# FLASK ROUTES AND FUNCTIONS
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # Default Index Route
@@ -577,23 +658,23 @@ def index():
     return render_template("index.html")
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # Login Page Function
 @app.route("/login")
-def login(
-    check={
+def login():
+    check = {
         "valid_Mail": True,
         "valid_Pass": True,
         # 'valid_user' : True,
         "valid_Captcha": True,
-    },
-    msg="",
-    values={"mail": ""},
-):
+    }
+    msg = ""
+    values = {"mail": ""}
+    session["mail"] = None
     # the checks are by default all True
     # After validation and db checking, the checks can be False
     # empty msg as the form is not filled
@@ -604,24 +685,24 @@ def login(
     return render_template("login.html", check=check, msg=msg, values=values)
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # Signup Page function
 @app.route("/signup")
-def signup(
-    check={
+def signup():
+    check = {
         "valid_Mail": True,
         "mail_Duplicate": True,
         "valid_Pass": True,
         "match_Pass": True,
         "valid_Captcha": True,
-    },
-    msg="",
-    values={"mail": ""},
-):
+    }
+    msg = ""
+    values = {"mail": ""}
+    session["mail"] = None
     # the checks are by default all True
     # After validation and db checking, the checks can be False
     # empty msg as the form is not filled
@@ -632,9 +713,9 @@ def signup(
     return render_template("signup.html", check=check, msg=msg, values=values)
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # I M P O R T A N T
@@ -644,8 +725,8 @@ def signup(
 
 # function to validate and check the login and signup information
 @app.route("/form", methods=["POST", "GET"])
-def form(
-    file_check={
+def form():
+    file_check = {
         "valid_address": True,
         "valid_area": True,
         "valid_state": True,
@@ -653,9 +734,8 @@ def form(
         "valid_zip": True,
         "valid_file": True,
         "valid_Captcha": True,
-    },
-    file_values={"address": "", "area": "", "zipcode": ""},
-):
+    }
+    file_values = {"address": "", "area": "", "zipcode": ""}
     # all the file upload form checks are kept True by default
     # all file_values are kept empty before the form is filled for the first time
     # (first time access of form)
@@ -812,35 +892,34 @@ def form(
             # like mail/password regex error
             else:
                 # # check if the session is active
-                # if mail:
-                # 	# initially declaration of remaining attempts
-                # 	remaining_attempts = False
+                if session["mail"]:
+                    # initially declaration of remaining attempts
+                    remaining_attempts = False
 
-                # 	# the actual count of attempts remaining based on mail
-                # 	attempts = get_attempts(mail)
+                    # the actual count of attempts remaining based on mail
+                    attempts = get_attempts(mail)
 
-                # 	# mark remaining attempts as True if user has got attempts remaining
-                # 	if attempts> 0:
-                # 		remaining_attempts = True
+                    # mark remaining attempts as True if user has got attempts remaining
+                    if attempts > 0:
+                        remaining_attempts = True
 
-                # 	# redirected to file upload form if form is refershed without submitting
-                # 	return render_template(
-                # 		"file_upload.html",
-                # 		check = file_check,
-                # 		msg = '',
-                # 		err = '',
-                # 		attempts = attempts,
-                # 		remaining_attempts = remaining_attempts,
-                # 		values = file_values
-                # 		)
+                    # redirected to file upload form if form is refershed without submitting
+                    return render_template(
+                        "file_upload.html",
+                        check=file_check,
+                        msg="",
+                        err="",
+                        attempts=attempts,
+                        remaining_attempts=remaining_attempts,
+                        values=file_values,
+                    )
 
-                # # incase session is not active
-                # else:
-
-                # the credentials are either empty or do not match the regular expression check
-                return render_template(
-                    "signup.html", check=check, msg="Try Again", values=values
-                )
+                # incase session is not active
+                else:
+                    # the credentials are either empty or do not match the regular expression check
+                    return render_template(
+                        "signup.html", check=check, msg="Try Again", values=values
+                    )
 
         # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -953,34 +1032,33 @@ def form(
             # like mail/password regex error
             else:
                 # # check if the session is active
-                # if mail:
-                # 	# initially declaration of remaining attempts
-                # 	remaining_attempts = False
+                if session["mail"]:
+                    # initially declaration of remaining attempts
+                    remaining_attempts = False
 
-                # 	# the actual count of attempts remaining based on mail
-                # 	attempts = get_attempts(mail)
+                    # the actual count of attempts remaining based on mail
+                    attempts = get_attempts(mail)
 
-                # 	# mark remaining attempts as True if user has got attempts remaining
-                # 	if attempts > 0:
-                # 		remaining_attempts = True
+                    # mark remaining attempts as True if user has got attempts remaining
+                    if attempts > 0:
+                        remaining_attempts = True
 
-                # 	# redirected to file upload form if form is refershed without submitting
-                # 	return render_template(
-                # 		"file_upload.html",
-                # 		check = file_check,
-                # 		msg = '',
-                # 		err = '',
-                # 		attempts = attempts,
-                # 		remaining_attempts = remaining_attempts,
-                # 		values = file_values
-                # 		)
+                    # redirected to file upload form if form is refershed without submitting
+                    return render_template(
+                        "file_upload.html",
+                        check=file_check,
+                        msg="",
+                        err="",
+                        attempts=attempts,
+                        remaining_attempts=remaining_attempts,
+                        values=file_values,
+                    )
 
-                # else:
-
-                # the credentials are either empty or do not match the regular expression check
-                return render_template(
-                    "login.html", check=check, msg="Try Again", values=values
-                )
+                else:
+                    # the credentials are either empty or do not match the regular expression check
+                    return render_template(
+                        "login.html", check=check, msg="Try Again", values=values
+                    )
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -997,21 +1075,21 @@ def form(
     # 	return render_template("file_upload.html", check= check, msg= '', err= '', attempts= attempts, remaining_attempts= remaining_attempts)
 
     else:
-        # print('redirct')
+        # print("redirct")
         # if the page is accesses without logging in or signing up
         # redirected to login page
         return redirect("/login")
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
 # function to validate file upload forms data
 @app.route("/file_upload", methods=["POST", "GET"])
-def file_upload(
-    check={
+def file_upload():
+    check = {
         "valid_address": True,
         "valid_area": True,
         "valid_state": True,
@@ -1019,16 +1097,22 @@ def file_upload(
         "valid_zip": True,
         "valid_file": True,
         "valid_Captcha": True,
-    },
-    values={"address": "", "area": "", "zipcode": ""},
-):
+    }
+    values = ({"address": "", "area": "", "zipcode": ""},)
     # checks will be determined after verifying every field
 
     # check for session started
     mail = session.get("mail")
-    print("-----------------------------------")
-    print("Session Mail : ", mail, ":::", session.get("mail"))
-    print("-----------------------------------")
+    # print("-----------------------------------")
+    # print("Session Mail : ", mail, ":::", session.get("mail"))
+    # print("-----------------------------------")
+
+    remaining_attempts = False
+
+    attempts = get_attempts(mail)
+
+    if attempts > 0:
+        remaining_attempts = True
 
     # after the file upload form submission
     # All POST requests get validated here ↓
@@ -1114,8 +1198,8 @@ def file_upload(
         remaining_attempts = False
 
         attempts = get_attempts(mail)
-        print(mail)
-        print(check)
+        # print(mail)
+        # print(check)
 
         if attempts > 0:
             remaining_attempts = True
@@ -1142,13 +1226,13 @@ def file_upload(
             if pothole_percent < 60:
                 os.remove(UPLOAD_FOLDER + file_name)
 
-                print(session.get("mail"))
+                # print(session.get("mail"))
 
-                print(list(db["data"].find({"mail": mail})))
+                # print(list(db["data"].find({"mail": mail})))
 
                 db["data"].update_many({"mail": mail}, {"$inc": {"attempts": -1}})
 
-                print(list(db["data"].find({"mail": mail})))
+                # print(list(db["data"].find({"mail": mail})))
 
                 remaining_attempts = False
 
@@ -1167,15 +1251,15 @@ def file_upload(
 
             else:
                 if collection.insert_one(details):
-                    print("inserted", details)
+                    # print("inserted", details)
 
-                    print(session.get("mail"))
+                    # print(session.get("mail"))
 
-                    print(list(db["data"].find({"mail": mail})))
+                    # print(list(db["data"].find({"mail": mail})))
 
                     db["data"].update_many({"mail": mail}, {"$inc": {"attempts": -1}})
 
-                    print(list(db["data"].find({"mail": mail})))
+                    # print(list(db["data"].find({"mail": mail})))
 
                     remaining_attempts = False
 
@@ -1202,6 +1286,15 @@ def file_upload(
                         values=values,
                     )
         else:
+            # if session["mail"]:
+            #     return render_template(
+            #         "pothole_result.html",
+            #         parameters=parameters,
+            #         results=results,
+            #         attempts=attempts,
+            #         remaining_attempts=remaining_attempts,
+            #     )
+
             return render_template(
                 "file_upload.html",
                 check=check,
@@ -1212,14 +1305,7 @@ def file_upload(
                 values=values,
             )
 
-    elif mail:
-        remaining_attempts = False
-
-        attempts = get_attempts(mail)
-
-        if attempts > 0:
-            remaining_attempts = True
-
+    elif session["mail"]:
         return render_template(
             "file_upload.html",
             check=check,
@@ -1233,10 +1319,17 @@ def file_upload(
     return redirect("/login")
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# ADMIN SECTION
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 # A D M I N
 # 			A D M I N
@@ -1245,34 +1338,37 @@ def file_upload(
 
 # Admin Login Form
 @app.route("/admin")
-def admin(
-    errors={
+def admin():
+    errors = {
         "valid_ID": True,
         "valid_Pass": True,
         "valid_Captcha": True,
         "valid_admin": True,
+        # error checks will be marked after the validations
     }
-):
+    # load admin login form
     return render_template("admin.html", errors=errors)
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-# Admin Dashboard
+# Function to validate admin login and redirect to Admin Dashboard if login success
 @app.route("/admin_login", methods=["POST", "GET"])
-def admin_panel(
-    errors={
+def admin_panel():
+    errors = {
         "valid_ID": True,
         "valid_Pass": True,
         "valid_Captcha": True,
         "valid_admin": True,
     }
-):
+    # error checks will be marked after the validations
+    # after the form is submitted
     if request.method == "POST":
         uid_regex = "[a-zA-Z]{3}[0-9]{11}"
+        # Regular Expression for valid admin ID
 
         pass_regex = (
             r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,20}$"
@@ -1285,8 +1381,12 @@ def admin_panel(
         # 1 Special Character
         # length must be between 8 to 20
 
+        # credentials received in plain-text
+        # DB contains hashed_salted form of credentials
         uid = request.form.get("uid").strip().replace(" ", "").upper()
         password = request.form.get("password").strip().replace(" ", "")
+        # the password is received in plain-text
+        # the leading, trailing & in-between spaces are removed by strip() & replace()
 
         # validation of CAPTCHA
         if not captcha.validate():
@@ -1294,6 +1394,8 @@ def admin_panel(
             errors["valid_Captcha"] = False
 
         if not uid or not re.fullmatch(uid_regex, uid):
+            # if any of the condition fails the
+            # valid ID check is marked False
             errors["valid_ID"] = False
 
         if not password or not re.fullmatch(pass_regex, password):
@@ -1301,56 +1403,133 @@ def admin_panel(
             # valid password check is marked False
             errors["valid_Pass"] = False
 
+        # database to be used for verifying Login info
         db = mongoClient["userdata"]
 
+        # the collection used for valid user credentials
         collection = db["admin"]
 
+        # since all the credentials are hashed we need to get all the records of DB
+        # check each id-password pair
         all_doc = collection.find({}, {"_id": 0, "id": 1, "pass": 1})
 
+        # valid admin check is marked false
+        # true if the id-password pair exists
         errors["valid_admin"] = False
+
+        # searching each record
         for document in all_doc:
             # print(document)
             # print(type(document))
+
+            # check if id-password both fields exist
             if len(document) == 2:
+                # looping through each record fields to validate credentials
+
+                valid_ID, valid_pass = 0, 0
                 for field, value in document.items():
+                    # credentials hashed and salted using Bcrypt
+                    # checkpw function used to check the credentials
+                    # the function takes credentials(input) & credentials stored in database
+                    # both parameters need to be in bytes and thus are encoded
+                    # boolean value is returned (True for match)
+
                     if field == "id":
                         valid_ID = bcrypt.checkpw(uid.encode(), value.encode())
+                        # id will be true if it matches
+
                         # print(valid_ID)
                     elif field == "pass":
                         valid_pass = bcrypt.checkpw(password.encode(), value.encode())
+                        # password will be true if it matches
+
                         # print(valid_pass)
 
+                # if both credentials are correct as pair
                 if valid_ID and valid_pass:
-                    # print(document)
                     errors["valid_admin"] = True
+                    print(document)
                     break
 
-        # if all the checks are True
         print(errors)
+
+        # if all the checks are True
         if all([i for i in errors.values()]):
+            # get the graph data in JSON form
+            # will be used to plot interactive graph
             bar_state, bar_state_district = get_counts()
 
+            # redirect to main dashboard and display the graphs
             return render_template(
                 "admin_dashboard.html",
                 state_bar_graph=bar_state,
                 state_district_bar_graph=bar_state_district,
             )
+
         else:
             return render_template("admin.html", errors=errors)
+    # bar_state, bar_state_district = get_counts()
+
+    # return render_template(
+    #     "admin_dashboard.html",
+    #     state_bar_graph=bar_state,
+    #     state_district_bar_graph=bar_state_district,
+    # )
+
+    else:
+        # return to admin login form
+        return redirect("/admin")
+
+    # return redirect("/admin")
+    # return render_template("admin.html", errors=errors)
 
 
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
-# - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 
-# Main Function -->
+# MAIN FUNCTION
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    # app.run(debug=True)
 
     # -------------------------------------------------------
 
     # Uncomment after testing
+
+    file_upload_attempt_update.add_job(
+        id="Update Attempts", func=update_attempts, trigger="cron", hour=18, minute=23
+    )
+
+    file_upload_attempt_update.start()
+
+    clr_sessions.add_job(
+        id="Clear Sessions", func=clear_sessions, trigger="interval", minutes=10
+    )
+
+    clr_sessions.start()
+
+    authority_report.add_job(
+        id="Report Authority",
+        func=report_authority,
+        trigger="cron",
+        week="*",
+        day_of_week="fri",
+        hour=23,
+        minute=1,
+    )
+
+    authority_report.start()
+
+    app.run(debug=True, host="0.0.0.0", use_reloader=False)
+
+    # -------------------------------------------------------
 
     # file_upload_attempt_update.add_job(
     #     id="Update Attempts", func=update_attempts, trigger="cron", hour=0, minute=0

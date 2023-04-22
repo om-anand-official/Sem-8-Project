@@ -5,32 +5,46 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dist/output.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
   </head>
-  <body>
-    Admin Dashboard
-    <br />
-    Graph - State-wise
-    <br />
-    <div
-      id="state_bar_graph"
-      class="state_bar_graph"
-      style="height: 550px; width: 800px"
-    ></div>
-    <br />
-    Graph - District-wise
-    <br />
+  <body class="bg-neutral-900 relative h-screen">
+    <!-- onload="autoRefresh(10* 60* 1000)" -->
+    <nav class="flex bg-yellow-300 items-center h-24">
+      <a href="/">
+        <button
+          class="hover:bg-yellow-300 hover:text-black border-[3px] border-black bg-black text-yellow-300 font-bold text-xl ml-5 py-1 px-1 rounded-lg h-12 w-12"
+        >
+          <!-- <button class="border-4 border-black mx-5 p-2 h-10 w-10 rounded-full"> -->
+          <i class="fa-solid fa-house"></i>
+        </button>
+      </a>
+
+      <span class="p-2 text-2xl font-semibold"> Road Health Management </span>
+    </nav>
+
+    <div id="state_bar_graph" class="w-11/12 m-auto p-5 h-full my-3"></div>
     <div
       id="district_state_bar_graph"
-      class="district_state_bar_graph"
-      style="height: 550px; width: 800px"
+      class="w-11/12 m-auto p-5 h-full my-3"
     ></div>
-  </body>
-  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-  <script type="text/javascript">
-    let bar_state = {{ state_bar_graph | safe }};
-    Plotly.plot('state_bar_graph', bar_state, {});
 
-    let bar_state_district = {{ state_district_bar_graph | safe }};
-    Plotly.plot('district_state_bar_graph', bar_state_district, {});
-  </script>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+      var bar_state = {{ state_bar_graph | safe }};
+      Plotly.newPlot('state_bar_graph', bar_state, {});
+
+      var bar_state_district = {{ state_district_bar_graph | safe }};
+      Plotly.newPlot('district_state_bar_graph', bar_state_district, {});
+    </script>
+  </body>
 </html>
