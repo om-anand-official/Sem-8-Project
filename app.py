@@ -112,6 +112,13 @@ from docx.shared import Inches, Cm
 # convert .docx to .pdf (report making)
 from docx2pdf import convert
 
+import string
+import secrets
+import smtplib
+import ssl
+from email.utils import formataddr
+from email.message import EmailMessage
+import os
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -169,14 +176,20 @@ captcha = FlaskSessionCaptcha(app)
 
 # scheduler objects to schedule tasks
 
-# scheduler object for updating upload count everyday at midnight
+# reset upload count everyday at midnight
 file_upload_attempt_update = APScheduler()
 
-# scheduler object for reporting authorities
+# reporting authorities
 authority_report = APScheduler()
 
 # clear previous sessions every 6 hours
 clr_sessions = APScheduler()
+
+# remove unverified accounts
+clr_unverified_accounts = APScheduler()
+
+# reset verification code count everyday at midnight
+verification_code_attempt_update = APScheduler()
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -222,6 +235,58 @@ def clear_sessions():
     # delete all previous sessions
     collection.drop()
     print(f"==> {dt.now()} :: All sessions cleared")
+
+
+def update_verification_code_attempts():
+    # the database that stores user data
+    db = mongoClient["userdata"]
+
+    # collection that stores user data
+    collection = db["code_count"]
+
+    collection.drop()
+
+    collection = db["data"]
+
+    all_doc = collection.find({}, {"_id": 0, "mail": 1})
+
+    ls = [value for doc in all_doc for value in doc.values()]
+
+    print(ls)
+
+    collection = db["code_count"]
+
+    for i in ls:
+        collection.insert_one({"mail": i, "code": "0", "attempts": 3})
+
+    # count of all the updated documents
+    n = collection.count_documents({"code": "0", "attempts": 3})
+
+    # total documents in the collection
+    t = collection.count_documents({})
+
+    # printing the counts to ensure all records are updated
+    print(f"==> {dt.now()} :: {n}/{t} Documents Updated")
+
+
+def clear_unverified_accounts():
+    # the database that stores user data
+    db = mongoClient["userdata"]
+
+    # collection that stores user data
+    collection = db["data"]
+
+    # the update query that updates the attempts
+    # count to 3 everyday
+    if collection.delete_many({"verified": 0}):
+        # count of all the updated documents
+        n = collection.count_documents({"verified": 1})
+
+        # total documents in the collection
+        t = collection.count_documents({})
+
+        # printing the counts to ensure all records are updated
+        print(f"==> {dt.now()} :: {n}/{t} Documents Remain")
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -359,6 +424,54 @@ def get_attempts(mail):
     return attempt
 
 
+# Function to return remaining attempts
+def get_code_attempts(mail):
+    # the database that stores user data
+    db = mongoClient["userdata"]
+
+    # collection that stores user data
+    collection = db["code_count"]
+
+    # the mail will be used as query for fetching
+    # the upload attempts count
+    details = {"mail": "%s" % (mail)}
+
+    # list with mail as query
+    # returns only the attempt count in BSON
+    attempts = list(collection.find(details, {"attempts": 1}))
+
+    # getting the attempt count from the BSON
+    attempt = attempts[0]["attempts"]
+    print(attempt, type(attempt))
+
+    # the attempt count is returned
+    return attempt
+
+
+# Function to return remaining attempts
+def get_code(mail):
+    # the database that stores user data
+    db = mongoClient["userdata"]
+
+    # collection that stores user data
+    collection = db["code_count"]
+
+    # the mail will be used as query for fetching
+    # the upload attempts count
+    details = {"mail": "%s" % (mail)}
+
+    # list with mail as query
+    # returns only the attempt count in BSON
+    codes = list(collection.find(details, {"code": 1}))
+
+    # getting the attempt count from the BSON
+    code = codes[0]["code"]
+    print(code, type(code))
+
+    # the attempt count is returned
+    return code
+
+
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -429,15 +542,17 @@ def report_authority():
 
     collection = db["pothole_result"]
 
-    all_doc = collection.find({}, {"_id": 0, "mail": 0})
+    all_doc = list(collection.find({}, {"_id": 0, "mail": 0}))
 
     ls = [[value for value in doc.values()] for doc in all_doc]
 
     df = pd.DataFrame.from_records(list(all_doc))
 
-    # print(df)
+    print(df)
 
-    df.to_csv("Weekly Report-" + dt.now().strftime("%d-%m-%Y") + ".csv", index=False)
+    csv_file = "Weekly Report-" + dt.now().strftime("%d-%m-%Y") + ".csv"
+
+    df.to_csv(csv_file, index=False)
 
     for data in ls:
         row = table.add_row().cells
@@ -655,6 +770,7 @@ def get_counts(save_graph=False):
 @app.route("/")
 def index():
     session["mail"] = None
+    session["password_recovery"] = False
     return render_template("index.html")
 
 
@@ -669,7 +785,7 @@ def login():
     check = {
         "valid_Mail": True,
         "valid_Pass": True,
-        # 'valid_user' : True,
+        "valid_user": True,
         "valid_Captcha": True,
     }
     msg = ""
@@ -711,6 +827,198 @@ def signup():
 
     # signup.html rendered with default values
     return render_template("signup.html", check=check, msg=msg, values=values)
+
+
+@app.route("/forgot_password")
+def forgot_password():
+    check = {"valid_Mail": True, "user_exist": True}
+    values = {"mail": ""}
+    return render_template("password_recovery.html", check=check, values=values)
+
+
+@app.route("/check_mail", methods=["POST", "GET"])
+def check_mail():
+    check = {"valid_Mail": True, "user_exist": True}
+    mail_regex = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b"
+
+    db = mongoClient["userdata"]
+
+    # the collection used for valid user credentials
+    collection = db["data"]
+
+    if request.method == "POST":
+        tmp_mail = request.form.get("mail").strip().replace(" ", "")
+
+        session["tmp_mail"] = tmp_mail
+
+        values = {"mail": tmp_mail}
+
+        if not tmp_mail or not re.fullmatch(mail_regex, tmp_mail):
+            check["valid_Mail"] = False
+            return render_template("password_recovery.html", check=check, values=values)
+
+        else:
+            if collection.count_documents({"mail": "%s" % (tmp_mail)}):
+                # if user already exists
+
+                if collection.count_documents(
+                    {"mail": "%s" % (tmp_mail), "verified": 1}
+                ):
+                    # user exists and is verified
+                    session["password_recovery"] = True
+                    return redirect("/code_generate")
+
+                else:
+                    # user unverified
+                    return redirect("/code_generate")
+
+                # collection = db["code_count"]
+
+                # if collection.count_documents
+
+            else:
+                # no such user exist
+                check["user_exist"] = False
+                return render_template(
+                    "password_recovery.html", check=check, values=values
+                )
+    return render_template("password_recovery.html", check=check, values=values)
+
+
+@app.route("/code_generate", methods=["POST", "GET"])
+def code_gen():
+    code = "".join(secrets.choice(string.digits) for i in range(6))
+    check = {"valid_code": True, "code_attempt": True}
+
+    db = mongoClient["userdata"]
+
+    # collection that stores user data
+    collection = db["code_count"]
+
+    if get_code_attempts(session["tmp_mail"]) > 0:
+        collection.update_one(
+            {"mail": session["tmp_mail"]},
+            {"$set": {"code": code}, "$inc": {"attempts": -1}},
+        )
+
+        email_sender = "anand.extra.01@gmail.com"
+        email_password = os.environ.get("extra01_mail_python")
+        email_receiver = session["tmp_mail"]
+
+        subject = "Verification Code"
+        body = "Verification Code : " + code
+
+        em = EmailMessage()
+        em["From"] = formataddr(("Road Health Management", email_sender))
+        em["To"] = email_receiver
+        em["Subject"] = subject
+
+        em.set_content(body)
+        context = ssl.create_default_context()
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as smtp:
+            smtp.login(email_sender, email_password)
+            smtp.sendmail(email_sender, email_receiver, em.as_string())
+
+        print(code)
+    else:
+        check["code_attempt"] = False
+
+    return render_template(
+        "code_verify.html", check=check, user_verified=session["password_recovery"]
+    )
+
+
+@app.route("/code_verify", methods=["POST", "GET"])
+def code_verify():
+    code = get_code(session["tmp_mail"])
+    print(code)
+
+    check = {"valid_code": True, "code_attempt": True}
+
+    user_code = request.form.get("code").strip().replace(" ", "")
+
+    print(session["tmp_mail"], session["password_recovery"])
+    if user_code == code:
+        if session["password_recovery"]:
+            return redirect("/change_password")
+        else:
+            db = mongoClient["userdata"]
+            collection = db["data"]
+
+            collection.update_one(
+                {"mail": session["tmp_mail"]},
+                {"$set": {"verified": 1}},
+            )
+
+            print(list(db["data"].find({"mail": session["tmp_mail"]})))
+
+            return render_template(
+                "verified_user.html", user_verified=True, pass_change=False
+            )
+    else:
+        check["valid_code"] = False
+
+    return render_template(
+        "code_verify.html", check=check, user_verified=session["password_recovery"]
+    )
+
+
+@app.route("/change_password", methods=["POST", "GET"])
+def change_password():
+    check = {
+        "valid_Pass": True,
+        "match_Pass": True,
+    }
+    return render_template("change_password.html", check=check)
+
+
+@app.route("/check_password", methods=["POST", "GET"])
+def check_password():
+    check = {
+        "valid_Pass": True,
+        "match_Pass": True,
+    }
+
+    password = request.form.get("password").strip().replace(" ", "")
+    conf_pass = request.form.get("conf_pass").strip().replace(" ", "")
+
+    pass_regex = (
+        r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,20}$"
+    )
+
+    if (
+        not password
+        or not conf_pass
+        or not re.fullmatch(pass_regex, password)
+        or not re.fullmatch(pass_regex, conf_pass)
+    ):
+        check["valid_Pass"] = False
+
+    if password != conf_pass:
+        check["match_Pass"] = False
+
+    if all([i for i in check.values()]):
+        salt = bcrypt.gensalt()
+        password = bcrypt.hashpw(password.encode(), salt)
+
+        db = mongoClient["userdata"]
+        collection = db["data"]
+
+        collection.update_one(
+            {"mail": session["tmp_mail"]},
+            {"$set": {"pass": "%s" % (password.decode())}},
+        )
+
+        print("password changed successfully", password)
+
+        print(list(db["data"].find({"mail": session["tmp_mail"]})))
+
+        return render_template(
+            "verified_user.html", user_verified=False, pass_change=True
+        )
+
+    return render_template("change_password.html", check=check)
 
 
 # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -847,6 +1155,7 @@ def form():
                     "mail": "%s" % (mail),
                     "pass": "%s" % (password.decode()),
                     "attempts": 3,
+                    "verified": 0,
                 }
 
                 # inersting the details in DB
@@ -854,7 +1163,11 @@ def form():
                 if collection.insert_one(details):
                     # mail id will be stored in token session
                     # to keep track of file uploads
-                    session["mail"] = mail
+                    session["tmp_mail"] = mail
+
+                    collection = db["code_count"]
+
+                    collection.insert_one({"mail": mail, "code": "0", "attempts": 3})
 
                     # initially declaration of remaining attempts
                     remaining_attempts = False
@@ -866,16 +1179,17 @@ def form():
                     if attempts > 0:
                         remaining_attempts = True
 
+                    return redirect("/code_generate")
                     # redirected to file upload form after successful user login
-                    return render_template(
-                        "file_upload.html",
-                        msg="User Created Successfully",
-                        check=file_check,
-                        err="",
-                        attempts=attempts,
-                        remaining_attempts=remaining_attempts,
-                        values=file_values,
-                    )
+                    # return render_template(
+                    #     "file_upload.html",
+                    #     msg="User Created Successfully",
+                    #     check=file_check,
+                    #     err="",
+                    #     attempts=attempts,
+                    #     remaining_attempts=remaining_attempts,
+                    #     values=file_values,
+                    # )
 
                 # incase there is an error in user creation
                 # regarding DB
@@ -928,7 +1242,7 @@ def form():
             check = {
                 "valid_Mail": True,
                 "valid_Pass": True,
-                # 'valid_user' : True,
+                "valid_user": True,
                 "valid_Captcha": True,
             }
             # checks will be determined after checking all fields against regular expressions and DB
@@ -963,64 +1277,94 @@ def form():
                 # if incorrect captcha
                 check["valid_Captcha"] = False
 
+            print(check)
+            print(session["mail"])
             # if all the checks are True
             if all([i for i in check.values()]):
                 # the count of user will be returned (0 or 1)
                 # 1 if exists ; 0 if not
                 # the DB contains only unique mails
                 user_exist = collection.count_documents({"mail": "%s" % (mail)})
+                print(user_exist)
 
                 # user found in DB
                 if user_exist:
-                    # the password field will be returned for the mail id entered
-                    db_passwords = list(
-                        collection.find({"mail": "%s" % (mail)}, {"pass": 1})
-                    )
-                    db_password = db_passwords[0]["pass"]
+                    if collection.count_documents(
+                        {"mail": "%s" % (mail), "verified": 1}
+                    ):
+                        # the password field will be returned for the mail id entered
+                        db_passwords = list(
+                            collection.find({"mail": "%s" % (mail)}, {"pass": 1})
+                        )
+                        db_password = db_passwords[0]["pass"]
 
-                    # password hashed and salted using Bcrypt
-                    # checkpw function used to check the input password
-                    # the function takes password(input) & password stored in database
-                    # both parameters need to be in bytes and thus are encoded
-                    # boolean value is returned (True for match)
-                    correct_pass = bcrypt.checkpw(
-                        password.encode(), db_password.encode()
-                    )
-
-                    # print(user_exist)
-                    # print(password)
-                    # print(db_password)
-                    # print(correct_pass)
-
-                    # if the user is found and password is correct
-                    if user_exist and correct_pass:
-                        # mail id will be stored in token session
-                        # to keep track of file uploads
-                        session["mail"] = mail
-
-                        # initially declaration of remaining attempts
-                        remaining_attempts = False
-
-                        # the actual count of attempts remaining based on mail
-                        attempts = get_attempts(mail)
-
-                        # mark remaining attempts as True if user has got attempts remaining
-                        if attempts > 0:
-                            remaining_attempts = True
-
-                        # redirected to file upload form after successful user login
-                        return render_template(
-                            "file_upload.html",
-                            msg="Logged in Successfully",
-                            check=file_check,
-                            err="",
-                            attempts=attempts,
-                            remaining_attempts=remaining_attempts,
-                            values=file_values,
+                        # password hashed and salted using Bcrypt
+                        # checkpw function used to check the input password
+                        # the function takes password(input) & password stored in database
+                        # both parameters need to be in bytes and thus are encoded
+                        # boolean value is returned (True for match)
+                        correct_pass = bcrypt.checkpw(
+                            password.encode(), db_password.encode()
                         )
 
+                        print(user_exist)
+                        print(password)
+                        print(db_password)
+                        print(correct_pass)
+                        print(user_exist and correct_pass)
+
+                        # if the user is found and password is correct
+                        if user_exist and correct_pass:
+                            # mail id will be stored in token session
+                            # to keep track of file uploads
+                            session["mail"] = mail
+                            session["tmp_mail"] = None
+
+                            # initially declaration of remaining attempts
+                            remaining_attempts = False
+
+                            # the actual count of attempts remaining based on mail
+                            attempts = get_attempts(mail)
+
+                            # mark remaining attempts as True if user has got attempts remaining
+                            if attempts > 0:
+                                remaining_attempts = True
+
+                            # redirected to file upload form after successful user login
+                            return render_template(
+                                "file_upload.html",
+                                msg="Logged in Successfully",
+                                check=file_check,
+                                err="",
+                                attempts=attempts,
+                                remaining_attempts=remaining_attempts,
+                                values=file_values,
+                            )
+
+                        else:
+                            check["valid_Pass"] = False
+                            check["valid_Mail"] = False
+                            # redirect to login page if the user does not exist in DB
+                            return render_template(
+                                "login.html",
+                                check=check,
+                                msg="Incorrect Password",
+                                values=values,
+                            )
+                    else:
+                        return redirect("/code_generate")
+
+                        # redirect to login page if the user does not exist in DB
+                        # return render_template(
+                        #     "login.html",
+                        #     check=check,
+                        #     msg="User does not exist.",
+                        #     values=values,
+                        # )
                 else:
                     # redirect to login page if the user does not exist in DB
+                    print("user not exist")
+                    check["valid_user"] = False
                     return render_template(
                         "login.html",
                         check=check,
@@ -1056,6 +1400,9 @@ def form():
 
                 else:
                     # the credentials are either empty or do not match the regular expression check
+                    check["valid_Pass"] = False
+                    check["valid_user"] = False
+                    check["valid_Mail"] = False
                     return render_template(
                         "login.html", check=check, msg="Try Again", values=values
                     )
@@ -1497,37 +1844,57 @@ def admin_panel():
 # MAIN FUNCTION
 
 if __name__ == "__main__":
-    # app.run(debug=True)
+    app.run(debug=True, threaded=True)
 
     # -------------------------------------------------------
 
     # Uncomment after testing
 
-    file_upload_attempt_update.add_job(
-        id="Update Attempts", func=update_attempts, trigger="cron", hour=18, minute=23
-    )
+    # file_upload_attempt_update.add_job(
+    #     id="Update Attempts", func=update_attempts, trigger="cron", hour=0, minute=0
+    # )
 
-    file_upload_attempt_update.start()
+    # file_upload_attempt_update.start()
 
-    clr_sessions.add_job(
-        id="Clear Sessions", func=clear_sessions, trigger="interval", minutes=10
-    )
+    # clr_unverified_accounts.add_job(
+    #     id="Clear Unverified Accounts",
+    #     func=clear_unverified_accounts,
+    #     trigger="cron",
+    #     hour=0,
+    #     minute=17,
+    # )
 
-    clr_sessions.start()
+    # clr_unverified_accounts.start()
 
-    authority_report.add_job(
-        id="Report Authority",
-        func=report_authority,
-        trigger="cron",
-        week="*",
-        day_of_week="fri",
-        hour=23,
-        minute=1,
-    )
+    # verification_code_attempt_update.add_job(
+    #     id="Update verification Code Attempts",
+    #     func=update_verification_code_attempts,
+    #     trigger="cron",
+    #     hour=0,
+    #     minute=17,
+    # )
 
-    authority_report.start()
+    # verification_code_attempt_update.start()
 
-    app.run(debug=True, host="0.0.0.0", use_reloader=False)
+    # clr_sessions.add_job(
+    #     id="Clear Sessions", func=clear_sessions, trigger="interval", minutes=10
+    # )
+
+    # clr_sessions.start()
+
+    # authority_report.add_job(
+    #     id="Report Authority",
+    #     func=report_authority,
+    #     trigger="cron",
+    #     week="*",
+    #     day_of_week="mon",
+    #     hour=0,
+    #     minute=0,
+    # )
+
+    # authority_report.start()
+
+    # app.run(debug=True, host="0.0.0.0", use_reloader=False)
 
     # -------------------------------------------------------
 
@@ -1537,8 +1904,28 @@ if __name__ == "__main__":
 
     # file_upload_attempt_update.start()
 
+    # clr_unverified_accounts.add_job(
+    #     id="Clear Unverified Accounts",
+    #     func=clear_unverified_accounts,
+    #     trigger="cron",
+    #     hour=0,
+    #     minute=17,
+    # )
+
+    # clr_unverified_accounts.start()
+
+    # verification_code_attempt_update.add_job(
+    #     id="Update verification Code Attempts",
+    #     func=update_verification_code_attempts,
+    #     trigger="cron",
+    #     hour=0,
+    #     minute=17,
+    # )
+
+    # verification_code_attempt_update.start()
+
     # clr_sessions.add_job(
-    #     id="Clear Sessions", func=clear_sessions, trigger="interval", hours=1
+    #     id="Clear Sessions", func=clear_sessions, trigger="interval", minutes=10
     # )
 
     # clr_sessions.start()
@@ -1547,8 +1934,10 @@ if __name__ == "__main__":
     #     id="Report Authority",
     #     func=report_authority,
     #     trigger="cron",
-    #     days_of_week="sun",
-    #     hour=6,
+    #     week="*",
+    #     day_of_week="mon",
+    #     hour=0,
+    #     minute=0,
     # )
 
     # authority_report.start()
