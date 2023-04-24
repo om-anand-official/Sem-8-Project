@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dist/output.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+  </head>
+  <body class="bg-neutral-900 relative h-screen">
+    <nav class="flex bg-yellow-300 items-center h-24">
+      <a href="/">
+        <button
+          class="hover:bg-yellow-300 hover:text-black border-[3px] border-black bg-black text-yellow-300 font-bold text-xl ml-5 py-1 px-1 rounded-lg h-12 w-12"
+        >
+          <!-- <button class="border-4 border-black mx-5 p-2 h-10 w-10 rounded-full"> -->
+          <i class="fa-solid fa-house"></i>
+        </button>
+      </a>
+      <span class="p-2 text-2xl font-semibold"> Road Health Management </span>
+    </nav>
+    <div
+      class="container mx-auto flex-1 flex items-center justify-center px-2 py-5 w-2/3"
+    >
+      <div
+        class="bg-neutral-900 py-8 my-5 rounded-3xl shadow-md text-yellow-300 w-full border-4 border-yellow-300 items-center justify-center flex flex-col"
+      >
+        {% if check["code_attempt"] %}
+
+        <form action="/code_verify" method="post" class="font-medium">
+          <p class="mb-8 text-3xl text-center font-semibold">
+            Code Verification
+          </p>
+          <p class="text-xl text-justify font-semibold">
+            Verification code has been sent to your mail ID.
+          </p>
+          {% if not user_verified %}
+          <p class="mb-4 text-base text-justify font-semibold text-red-500">
+            User not verified.
+          </p>
+          {% endif %}
+          <span class="text-lg font-medium">
+            <i class="fa-solid fa-circle-info mr-2"></i> Code
+          </span>
+          <input
+            type="text"
+            name="code"
+            pattern="[0-9]{6}"
+            class="border border-black w-full p-2 rounded my-3 text-neutral-900 bg-yellow-200"
+            required
+          />
+          {% if not check["valid_code"] %}
+          <br />
+          <p class="text-base text-red-500 mb-2">Invalid Code</p>
+          {% endif %}
+          <p class="text-blue-500 mb-4 text-lg text-center font-semibold">
+            <a href="/code_generate"> Resend Code </a>
+          </p>
+
+          <input
+            type="submit"
+            name="page"
+            value="Verify Code"
+            class="border border-black w-full p-2 rounded my-3 text-neutral-900 bg-yellow-300 cursor-pointer hover:bg-yellow-700 hover:text-white"
+          />
+        </form>
+        {% else %}
+
+        <p class="text-xl text-justify font-semibold">
+          You've requested too many codes.
+        </p>
+        {% endif %}
+      </div>
+    </div>
+  </body>
+</html>
