@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Login</title>
+    <title>Code Verification</title>
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/dist/output.css') }}"
@@ -66,6 +66,8 @@
           <p class="text-blue-500 mb-4 text-lg text-center font-semibold">
             <a href="/code_generate"> Resend Code </a>
           </p>
+
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
           <input
             type="submit"

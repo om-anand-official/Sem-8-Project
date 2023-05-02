@@ -35,7 +35,7 @@
       <div
         class="bg-neutral-900 py-8 my-5 rounded-3xl shadow-md text-yellow-300 w-full border-4 border-yellow-300 items-center justify-center flex"
       >
-        <form action="/form" method="post" class="font-medium px-12">
+        <form action="/signup_validate" method="post" class="font-medium px-12">
           <p class="mb-8 text-3xl text-center font-semibold">Register</p>
           <span class="text-lg font-medium">
             <i class="fa-solid fa-envelope mr-2"></i> Mail
@@ -44,7 +44,7 @@
             type="email"
             name="mail"
             value="{{ values['mail'] }}"
-            pattern="^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$"
+            pattern="^[a-zA-Z0-9.]{1,64}@(?:[a-zA-Z0-9-]{1,63}\.){1,8}[a-zA-Z]{2,63}$"
             class="border border-black w-full p-2 rounded my-3 text-neutral-900 bg-yellow-200"
             required
           />
@@ -61,7 +61,8 @@
           <input
             type="password"
             name="password"
-            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+            id="password"
+            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,20}$"
             class="border border-black w-full p-2 rounded my-3 text-neutral-900 bg-yellow-200"
             required
           />
@@ -72,10 +73,19 @@
           <input
             type="password"
             name="conf_pass"
-            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+            id="confirm_password"
+            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,20}$"
             class="border border-black w-full p-2 rounded my-3 text-neutral-900 bg-yellow-200"
             required
           />
+          <p class="text-sm mb-2">
+            <input
+              type="checkbox"
+              class="accent-yellow-500"
+              onclick="password_type_toggle_function()"
+            />
+            Show Password
+          </p>
 
           {% if not check["valid_Pass"] %}
           <br />
@@ -93,6 +103,7 @@
               <input
                 type="text"
                 name="captcha"
+                pattern="[0-9]{6}"
                 class="border border-black w-11/12 p-2 rounded my-3 text-neutral-900 bg-yellow-200"
                 required
               />
@@ -104,6 +115,8 @@
           {% if not check["valid_Captcha"] %}
           <p class="text-base text-red-500 mb-2">Incorrect CAPTCHA</p>
           {% endif %}
+
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
 
           <input
             type="submit"
@@ -127,6 +140,22 @@
         </form>
       </div>
     </div>
+    <script>
+      function password_type_toggle_function() {
+        var password_type_toggle = document.getElementById("password");
+        if (password_type_toggle.type === "password") {
+          password_type_toggle.type = "text";
+        } else {
+          password_type_toggle.type = "password";
+        }
+        var password_type_toggle = document.getElementById("confirm_password");
+        if (password_type_toggle.type === "password") {
+          password_type_toggle.type = "text";
+        } else {
+          password_type_toggle.type = "password";
+        }
+      }
+    </script>
   </body>
 </html>
 

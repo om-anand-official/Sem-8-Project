@@ -57,14 +57,23 @@
           <input
             type="password"
             name="password"
-            pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}"
+            id="password"
+            pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,20}$"
             class="border border-black w-full p-2 rounded my-3 text-neutral-900 bg-yellow-200"
             required
           />
+          <p class="text-sm mb-2">
+            <input
+              type="checkbox"
+              class="accent-yellow-500"
+              onclick="password_type_toggle_function()"
+            />
+            Show Password
+          </p>
 
           {% if not (errors["valid_ID"] and errors["valid_Pass"] and
           errors["valid_admin"]) %}
-          <br />
+
           <p class="text-base text-red-500 mb-2">Incorrect Credentials</p>
           {% endif %}
 
@@ -76,6 +85,7 @@
               <input
                 type="text"
                 name="captcha"
+                pattern="[0-9]{6}"
                 class="border border-black w-11/12 p-2 rounded my-3 text-neutral-900 bg-yellow-200"
                 required
               />
@@ -88,6 +98,8 @@
           <p class="text-base text-red-500 mb-2">Incorrect CAPTCHA</p>
           {% endif %}
 
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
           <input
             type="submit"
             name="page"
@@ -97,10 +109,15 @@
         </form>
       </div>
     </div>
-    <!-- <script language="javascript">
-      autoRefresh = (t) => {
-        setTimeout("location.reload(true)", t);
-      };
-    </script> -->
+    <script>
+      function password_type_toggle_function() {
+        var password_type_toggle = document.getElementById("password");
+        if (password_type_toggle.type === "password") {
+          password_type_toggle.type = "text";
+        } else {
+          password_type_toggle.type = "password";
+        }
+      }
+    </script>
   </body>
 </html>
